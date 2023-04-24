@@ -70,12 +70,13 @@ DLL_VERS = 7            # version number of dll
 
 # import first, as these constants may be used early on
 try:
+    import sys
     import config_phys
     import hw_pb as hw
-except Exception, target:
-    s = 'ERROR importing configuration: %s' % (str(target))
-    print s
-    raw_input('Press enter to close this window.')
+except Exception as target:
+    s = 'ERROR importing configuration: ' + target.msg
+    print(s)
+    input('Press enter to close this window.')
     sys.exit(1)
 
 # built-ins
@@ -93,10 +94,10 @@ try:
     #import array
     import threading # sound DLL
     import traceback
-except ImportError, target:
-    print 'Software configuration error: %s.' % str(target)
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print('Software configuration error: ' + target.msg)
+    print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+    input('Press enter to close this window.')
     sys.exit(1)
 
 # globals
@@ -117,7 +118,7 @@ def excepthook(type, value, tb):
     with open(error_file_path, 'a') as f:
         f.write(message)
         f.write('\n')
-    print message
+    print(message)
 
     message = 'SOFTWARE ERROR, PLEASE send {0} to {1}'.format(
         error_file_path, config_phys.CONTACT_EMAIL)
@@ -125,8 +126,8 @@ def excepthook(type, value, tb):
         message += ' and RESTART this program.'
         ErrorDlg(g_frame, message)
     else:
-        print message
-        raw_input('Press enter to continue.') # needed
+        print(message)
+        input('Press enter to continue.') # needed
 
 sys.excepthook = excepthook
 
@@ -135,36 +136,36 @@ try:
     import wx.lib.agw.pygauge as PG
     if 1:#ENAB_MOVIE:
         import wx.media
-except ImportError, target:
-    print 'Software configuration error: %s. You need to install or update the wx package.' % str(target)
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print(('Software configuration error: %s. You need to install or update the wx package.' % str(target)))
+    print(('Please email %s for assistance.' % config_phys.CONTACT_EMAIL))
+    input('Press enter to close this window.')
     sys.exit(1)
 
 try:
     import numpy
-except ImportError, target:
-    print 'Software configuration error. You need to install the numpy package.'
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print('Software configuration error. You need to install the numpy package.')
+    print(('Please email %s for assistance.' % config_phys.CONTACT_EMAIL))
+    input('Press enter to close this window.')
     sys.exit(1)
 
 try:
     import matplotlib.pyplot as plt
-except ImportError, target:
-    print 'Software configuration error. You need to install the matplotlib package.'
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print('Software configuration error. You need to install the matplotlib package.')
+    print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+    input('Press enter to close this window.')
     sys.exit(1)
 
 try:
     import win32api
     import win32process
     import win32con
-except ImportError, target:
-    print 'Software configuration error. You need to install the pywin32 package.'
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print('Software configuration error. You need to install the pywin32 package.')
+    print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+    input('Press enter to close this window.')
     sys.exit(1)
 
 # locally developed modules
@@ -173,10 +174,10 @@ try:
     from psychobaby_v19 import *
     from phys_base.phys import *
     import pb
-except ImportError, target:
-    print 'Software configuration error: %s.' % str(target)
-    print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-    raw_input('Press enter to close this window.')
+except ImportError as target:
+    print('Software configuration error: %s.' % str(target))
+    print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+    input('Press enter to close this window.')
     sys.exit(1)
 
 if hw.TOY_CONTROLLER == 'TDT_RP2' and config_phys.ON_NET:
@@ -200,12 +201,13 @@ try:
     analog_io.SetDebugMode(0)
     dll_loaded = True
     # print 'loaded dll'
-except WindowsError, (errno, strerror): # GOOD
-    print 'WindowsError loading "%s": %s' % (analog_io_fn, strerror)
-except Exception, target: # good
-    print 'ERROR loading %s: %s' % (analog_io_fn, str(target))
+except WindowsError as xxx_todo_changeme6: # GOOD
+    (errno, strerror) = xxx_todo_changeme6.args # GOOD
+    print('WindowsError loading "%s": %s' % (analog_io_fn, strerror))
+except Exception as target: # good
+    print('ERROR loading %s: %s' % (analog_io_fn, str(target)))
 if not dll_loaded:
-    raw_input('Press enter to close this window.')
+    input('Press enter to close this window.')
     sys.exit(1)
 
 
@@ -466,7 +468,7 @@ def verify_wav_files_exist(folder, filenames):
 def verify_calibrated(cal_table, wav_files):
     missing_cal_entries = []
     for wav_file in wav_files:
-        if not cal_table.has_key(wav_file):
+        if wav_file not in cal_table:
             missing_cal_entries.append(wav_file)
     return missing_cal_entries
 
@@ -520,10 +522,11 @@ def longest_wav_dur(parent, wav_folder, wav_files):
             if n_wav_samps > max_n_samps:
                 max_n_samps = n_wav_samps
             snd.close()
-        except IOError, (errno, strerror): # GOOD
+        except IOError as xxx_todo_changeme2: # GOOD
+            (errno, strerror) = xxx_todo_changeme2.args # GOOD
             ErrorDlg(parent, '1 IOError opening "%s": %s' % (wav_path, strerror))
             return -1
-        except Exception, target: # good
+        except Exception as target: # good
             ErrorDlg(parent, '1 ERROR opening %s: %s' % (wav_path, str(target)))
             return -1
         except: # in case exception not of type Exception (rare)
@@ -586,15 +589,16 @@ class ThreadClass(threading.Thread):
         try:
             stat = analog_io.Play()
             # print '## audio thread ending ###'
-        except WindowsError, (errno, strerror):
+        except WindowsError as xxx_todo_changeme3:
+            (errno, strerror) = xxx_todo_changeme3.args
             err_str = 'WindowsError from analog_io.Play "%s": %s' % (errno, strerror)
-        except Exception, target:
+        except Exception as target:
             err_str = 'ERROR from analog_io.Play: %s' % str(target)
-            print 
+            print() 
         except: # in case exception not of type Exception (rare)
             err_str = 'UNKNOWN ERROR from analog_io.Play'
         if err_str:
-            print err_str
+            print(err_str)
             ErrorDlg(g_frame, err_str)
         if stat:
             if stat == ERR_OVERRUN:
@@ -605,8 +609,8 @@ class ThreadClass(threading.Thread):
                 ErrorDlg(g_frame, 'ERROR from analog_io.Play: %s' % stat)
 
 if analog_io == None:
-    print 'ERROR:'+analog_io_fn+' cannot be loaded.'
-    raw_input('Press enter to close this window.')
+    print('ERROR:'+analog_io_fn+' cannot be loaded.')
+    input('Press enter to close this window.')
     exit(1)
 
 #----------------- video -----------------------------------------------
@@ -626,7 +630,7 @@ class VideoThreadClass(threading.Thread):
         SEEK_TIME_ALLOWANCE = 200 # allow 200 ms to seek
         global g_backgnd_video_active # higher-level version of video_lock
         if not g_player:
-            print 'NO g_player'
+            print('NO g_player')
             return
         timeWillStart = ctypes.c_int(0)
         nMsBeforeStart = ctypes.c_int(0)
@@ -639,7 +643,7 @@ class VideoThreadClass(threading.Thread):
                 # the sound thread has stopped
                 break
             if stat:
-                print 'Error from analog_io.WhenNextBackgnd: %s' % stat
+                print('Error from analog_io.WhenNextBackgnd: %s' % stat)
                 break
 
             # print 'BG: after WhenNextBackgnd, nMsDelay=%s now+nMsBeforeStart=%.3f' % (nMsDelay.value, time_to_play+1e-3*nMsBeforeStart.value)
@@ -672,7 +676,7 @@ class VideoThreadClass(threading.Thread):
                     time.sleep(0.1)
                     if time.clock() > t_timeout:
                         # timeout! something is wrong
-                        print '############## TIMEOUT waiting for g_foregnd_video_active#############'
+                        print('############## TIMEOUT waiting for g_foregnd_video_active#############')
                         # ErrorDlg(self, 'TIMEOUT waiting for g_foregnd_video_active')
                         break
                     
@@ -682,7 +686,7 @@ class VideoThreadClass(threading.Thread):
                 # print '%.3f BG about to seek: next_offset=%s' % (time.clock(), next_offset)
                 g_backgnd_video_active = True
                 if video_lock.locked():
-                    print '############ LOCKED, WILL NEED TO WAIT #######'
+                    print('############ LOCKED, WILL NEED TO WAIT #######')
                 with video_lock:
                     g_player.Seek(next_offset) #wx.FromStart
 
@@ -692,19 +696,19 @@ class VideoThreadClass(threading.Thread):
                 # this is about as good as you can get under Windows7
                 time_to_sleep = time_to_play - time.clock()
                 if time_to_sleep < 0.0:
-                    print 'Movie Play is LATE ***********************************'
+                    print('Movie Play is LATE ***********************************')
                 else:
                     time.sleep(time_to_sleep)
                 # 2. start movie
                 #g_backgnd_video_active = True # 11/20/15 moved this up to before seek
                 # print '%.3f BG about to play' % (time.clock(), )
                 if video_lock.locked():
-                    print '############ LOCKED, WILL NEED TO WAIT #######'
+                    print('############ LOCKED, WILL NEED TO WAIT #######')
                 with video_lock:
                     g_player.Play()
                 time.sleep(1e-3*self.video_lengths[next_index]) # sleep until video segment is done playing
                 if video_lock.locked():
-                    print '############ LOCKED, WILL NEED TO WAIT #######'
+                    print('############ LOCKED, WILL NEED TO WAIT #######')
                 with video_lock:
                     g_player.Pause()
                 g_backgnd_video_active = False
@@ -910,7 +914,7 @@ class BabyFeedback:
             irnd = random.randint(0, self.n_movies-1)
             movie_path = self.movies[irnd]
 
-        print 'movie =',movie_path
+        print('movie =',movie_path)
 
         m = pygame.movie.Movie(movie_path)
         #print 'size of movie:',m.get_size() # 640,480
@@ -927,19 +931,19 @@ class BabyFeedback:
         elif hw.devAtten == 'TDT_PA5':
             mult = 1.0
         m.set_volume(mult)
-        print 'movie len = %.1f sec' % m.get_length()
+        print('movie len = %.1f sec' % m.get_length())
         t_end = time.clock() + REINFORCER_MAX_TIME # FORCE STOP after this many seconds
         m.play()
         #print 'after play'
         timeout = time.clock()
         while m.get_busy():
             if time.clock() >= t_end:
-                print 'Force STOP'
+                print('Force STOP')
                 m.stop()
                 break
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    print 'User requested EXIT'
+                    print('User requested EXIT')
                     m.stop()
                     break
         # self.whiteout() # DOES NOT WORK, but if I call after yippee() it does work (9/4/13)
@@ -972,7 +976,7 @@ class ControlPanel(wx.Panel):
             try:
                 self.mc = wx.media.MediaCtrl(self, style=wx.SIMPLE_BORDER)
             except NotImplementedError:
-                print 'movie playback not enabled on this system'
+                print('movie playback not enabled on this system')
 
         nSizeNumBox = 55    # n pix across for number input text field
         row = 0
@@ -1581,14 +1585,14 @@ class MyFrame(PBFrame):
 
         display1 = wx.Display(0) # first monitor
         if display1.GetCount() > 1:
-            print 'have second monitor'
+            print('have second monitor')
             display2 = wx.Display(1)
             usable_display_size = display2.GetClientArea() # same as phys. if taskbar: height is reduced
             baby_window_width = usable_display_size[2]
             baby_window_height = usable_display_size[3]
             left2,top2,width2,height2 = display2.GetGeometry() # left2,top2 is location of 2nd monitor
         else:
-            print 'only one monitor'
+            print('only one monitor')
             display2 = None
             usable_display_size = display1.GetClientArea() # (0, 0, 1280, 1024) - Left,Top,Width,Height
             baby_window_width = usable_display_size[2]/2
@@ -1745,13 +1749,13 @@ class MyFrame(PBFrame):
                     self.bRunning = 0
                     return
                 self.toys.TurnOff()
-                print 'toys are turned off'
+                print('toys are turned off')
 
     def OnMediaLoaded(self, event):
-        print '------ OnMediaLoaded'
+        print('------ OnMediaLoaded')
         #self.movie_frame.player.Pause() # doesn't work, still disappears
         if video_lock.locked():
-            print '############ LOCKED, WILL NEED TO WAIT #######'
+            print('############ LOCKED, WILL NEED TO WAIT #######')
         with video_lock:
             self.movie_frame.player.Play() # how they say to use it. if you don't, you see flash of video on load.
             self.movie_frame.player.Seek(0) # make sure we are at very beginning
@@ -1763,7 +1767,7 @@ class MyFrame(PBFrame):
         # print '%.3f FG: ------ begin OnMovieTimer - ' % time.clock()
         # works
         if video_lock.locked():
-            print '############ LOCKED, WILL NEED TO WAIT #######'
+            print('############ LOCKED, WILL NEED TO WAIT #######')
         with video_lock:
             self.movie_frame.player.Seek(0) # works! video looks fine
             self.movie_frame.player.Pause() # works!
@@ -1819,18 +1823,18 @@ class MyFrame(PBFrame):
         phase = int(event.GetEventObject().GetLabel()[-2:]) - 1 # 1st is 0 (user sees 1)
         if self.controlPanel.phaseType[phase]['TRAIN'].GetValue():
             # make sure the vars exist
-            if not self.trainVars.has_key(phase):
-                print 'find most recent phase with info'
+            if phase not in self.trainVars:
+                print('find most recent phase with info')
                 src_phase = phase - 1
                 while src_phase > 0:
-                    if self.trainVars.has_key(src_phase):
+                    if src_phase in self.trainVars:
                         break
                     else:
                         src_phase -= 1
                 if src_phase < 0:
-                    print 'could not find prev phase train vars'
+                    print('could not find prev phase train vars')
                     # let illegal key trigger exception, which will be caught
-                print 'copy from phase0 %d to phase0 %d' % (src_phase,phase)
+                print('copy from phase0 %d to phase0 %d' % (src_phase,phase))
                 for i in range(src_phase, phase):
                     self.trainVars[i+1] = self.trainVars[i].copy()
                     self.catchAndProbeVars[i+1] = self.catchAndProbeVars[i].copy()
@@ -1891,7 +1895,7 @@ class MyFrame(PBFrame):
 
                 # run it
                 duration = longest_wav_dur(self, self.varStimFirst['nostep']['Wav folder'], wav_fn_str_to_list(CalVars['Wav file']))
-                print 'cal wav duration=',duration
+                print('cal wav duration=',duration)
                 if duration > 4.0 and CalVars['Channel'] == 1:
                     WarnDlg(self, 'WARNING: that is a long wav file (%.1f seconds) to play on channel 1. You probably meant channel 2, the background channel. It will take up to %.0f seconds to stop.' % (duration, duration))
                 self.sample_rate = 0 # allows each phase to have diff sample rate
@@ -1934,7 +1938,7 @@ class MyFrame(PBFrame):
 
                 self.sound_thread = ThreadClass()
                 self.sound_thread.start() # invokes run() in a separate thread of control
-                print 'self.sound_thread.isAlive()=',self.sound_thread.isAlive()
+                print('self.sound_thread.isAlive()=',self.sound_thread.isAlive())
 
                 bSoundOn = 1
             elif dlg.sButt == 'Turn Off' or dlg.sButt == 'Close':
@@ -1985,7 +1989,8 @@ class MyFrame(PBFrame):
             f.close()
             # self.SetTitle('%s - %s' % (os.path.basename(path), self.title)) # this info can bias the user
             self.SetTitle(self.title)
-        except IOError, (errno, strerror):
+        except IOError as xxx_todo_changeme4:
+            (errno, strerror) = xxx_todo_changeme4.args
             estr = "I/O error(%s): %s." % (errno, strerror)
             if errno == 13:
                 estr += ' The destination file may be open by another program.'
@@ -2007,11 +2012,11 @@ class MyFrame(PBFrame):
         self.trainVars = params['trainVars']
         self.upDownVars = params['upDownVars']
         self.catchAndProbeVars = params['catchAndProbeVars']
-        if not params.has_key('phaseName'):
+        if 'phaseName' not in params:
             phaseName = []
         else:
             phaseName = params['phaseName']
-        if params.has_key('bounceBackTarget'):
+        if 'bounceBackTarget' in params:
             self.controlPanel.bounceBackTarget.SetValue(params['bounceBackTarget'])
         else:
             self.controlPanel.bounceBackTarget.SetValue('')
@@ -2136,10 +2141,11 @@ class MyFrame(PBFrame):
                     ErrorDlg(self, 'ERROR: wave file %s has %d byte samples. I need 2-byte samples.' %
                                   (wav_file, snd.getsampwidth()))
                     return 1
-            except IOError, (errno, strerror): # GOOD
+            except IOError as xxx_todo_changeme: # GOOD
+                (errno, strerror) = xxx_todo_changeme.args # GOOD
                 ErrorDlg(self, '2 IOError opening "%s": %s' % (wav_path, strerror))
                 return 1
-            except Exception, target: # good
+            except Exception as target: # good
                 ErrorDlg(self, '2 ERROR opening %s: %s' % (wav_path, str(target)))
                 return 1
             except: # in case exception not of type Exception (rare)
@@ -2228,7 +2234,7 @@ class MyFrame(PBFrame):
 
             if level > 0:
                 # level is in dB SPL
-                if not self.max_dB_SPL[out_chan].has_key(wav_file):
+                if wav_file not in self.max_dB_SPL[out_chan]:
                     ErrorDlg(self, '%s not in chan %s cal table' % (wav_file, out_chan+1))
                     return 1
                 else:
@@ -2254,7 +2260,7 @@ class MyFrame(PBFrame):
         
     def Start(self, event):
         if self.bRunning:
-            print 'already running'
+            print('already running')
             return
         self.bRunning = 1
         self.controlPanel.meas_iec_button.Disable()
@@ -2321,7 +2327,7 @@ class MyFrame(PBFrame):
                     return
                 # self.movie_frame.Show(False) # always visible now
                 if video_lock.locked():
-                    print '############ LOCKED, WILL NEED TO WAIT #######'
+                    print('############ LOCKED, WILL NEED TO WAIT #######')
                 with video_lock:
                     self.movie_frame.player.Load(movie_path)
                 # how to tell if movie loaded OK? self.movie_frame.player.Length() returns zero, even if I sleep 5 seconds
@@ -2330,7 +2336,7 @@ class MyFrame(PBFrame):
                 # MOVIE
                 movieFolder = self.varStimFirst['nostep']['Movie folder']
                 if len(movieFolder):
-                    print 'MOVIE ENABLED'
+                    print('MOVIE ENABLED')
                     self.moviePaths = []
                     self.nMovies = 0
                     for path in all_files(movieFolder, '*.avi',):
@@ -2456,7 +2462,7 @@ class MyFrame(PBFrame):
         path = dlg.GetPath()
         self.currPath = path
         dlg.Destroy()
-        print path
+        print(path)
 
         try:
             self.outFile = open(path, 'w')
@@ -2466,7 +2472,8 @@ class MyFrame(PBFrame):
                 #print 'bounce-back phase is:',self.bounceBackTarget
                 self.outFile.write("Bounce-back target: %s\n" % self.bounceBackTarget)
             self.outFile.write("Program version: %s\n" % VERSION)
-        except IOError, (errno, strerror):
+        except IOError as xxx_todo_changeme5:
+            (errno, strerror) = xxx_todo_changeme5.args
             estr = "I/O error(%s): %s." % (errno, strerror)
             if errno == 13:
                 estr += ' The destination file may be open by another program.'
@@ -2495,7 +2502,7 @@ class MyFrame(PBFrame):
             else:
                 # default to 1 if not entered
                 n_tries = 1
-            print 'n_tries=',n_tries
+            print('n_tries=',n_tries)
             items = self.controlPanel.subjectNumber.GetValue().split()
             if len(items) != 2:
                 estr = 'ERROR: you must enter num_sessions and probability in Subject Number (To run 1000 sessions with 55%, enter: 1000 55)'
@@ -2509,7 +2516,7 @@ class MyFrame(PBFrame):
                 ErrorDlg(self, estr)
                 self.bRunning = 0
                 return
-            print 'n_sessions,prob,n_tries:',n_sessions,prob,n_tries
+            print('n_sessions,prob,n_tries:',n_sessions,prob,n_tries)
             # code to allow differnt probabilities
             self.sim_sig_resp_prob = prob
             self.sim_nosig_resp_prob = prob
@@ -2536,7 +2543,7 @@ class MyFrame(PBFrame):
             if SIMULATION:
                 # display i_session+1 on control panel (before I used nReversalsUsed)
                 if 1:#((i_session+1) % 10) == 0: # no sig speed diff (.5 sec)
-                    print 'session:',i_session+1
+                    print('session:',i_session+1)
                 if 1: #SIM_TEST:
                     self.outFile.write('\n----- session %d -----\n' % (i_session+1))
 
@@ -2544,10 +2551,10 @@ class MyFrame(PBFrame):
             for i_try in range(n_tries):
                 if i_try > 0:
                     if SIMULATION: #SIM_TEST:
-                        print 'try number %d' % (i_try+1)
+                        print('try number %d' % (i_try+1))
                         self.outFile.write('\n--- try %d -----\n' % (i_try+1))
                     else:
-                        print '################# THIS SHOULD NOT HAPPEN (i_try>0 and NOT SIMULATION'
+                        print('################# THIS SHOULD NOT HAPPEN (i_try>0 and NOT SIMULATION')
                 # if not SIMULATION, this executes once
                 
                 self.abort = 0
@@ -2685,7 +2692,7 @@ class MyFrame(PBFrame):
 
                     if self.nextPhase:
                         msg = 'just finished GOOD bounce-back from phase %s' % (self.nextPhase+1)
-                        print msg
+                        print(msg)
                         if not self.simulation_output_only:
                             self.outFile.write(msg+'\n')
 
@@ -2732,7 +2739,7 @@ class MyFrame(PBFrame):
 
         # end of session loop
         if SIMULATION:
-            print '********* DONE WITH SIMULATION took %.1f seconds *************' % (time.clock()-sim_begin_time)
+            print('********* DONE WITH SIMULATION took %.1f seconds *************' % (time.clock()-sim_begin_time))
 
         if 1: # to test simulation data while running interactively (why not do always?)
             self.outFile.write('\nPhase\tn_completed\n')
@@ -2800,7 +2807,8 @@ class MyFrame(PBFrame):
 
                 self.outFile.write(s+'\n')
 
-            except IOError, (errno, strerror):
+            except IOError as xxx_todo_changeme1:
+                (errno, strerror) = xxx_todo_changeme1.args
                 estr = "I/O error(%s): %s." % (errno, strerror)
                 if errno == 13:
                     estr += ' The destination file may be open by another program.'
@@ -2991,13 +2999,13 @@ class MyFrame(PBFrame):
                 n_cols, n_rows, signal_wav_files = load_wav_filenames(self,
                     self.varStimFirst['nostep']['Wav folder'],
                     var['Signal wav files'])
-                print 'read %d columns and %d rows of signal wav files' % (n_cols, n_rows)
+                print('read %d columns and %d rows of signal wav files' % (n_cols, n_rows))
                 n_A_wavs_this_phase = n_cols
                 n_wav_rows_this_phase = n_rows
                 n_cols2, n_rows2, wav_files = load_wav_filenames(self,
                     self.varStimFirst['nostep']['Wav folder'],
                     var['Background wav files'])
-                print 'read %d columns and %d rows of background wav files' % (n_cols2, n_rows2)
+                print('read %d columns and %d rows of background wav files' % (n_cols2, n_rows2))
             else:
                 signal_wav_files = wav_fn_str_to_list(var['Signal wav files'])
                 n_A_wavs_this_phase = len(signal_wav_files)
@@ -3187,7 +3195,7 @@ class MyFrame(PBFrame):
         while not bDone:
             self.bInRun = True
             if not SIMULATION:
-                print '-----------------'
+                print('-----------------')
             nTrial += 1
             nTrial2 = nTrial+self.nTrialsSoFar[nPhase]
             self.nTrialNumAll[self.nTrialIndexAll] = nTrial2
@@ -3308,7 +3316,7 @@ class MyFrame(PBFrame):
                             wx.Yield()
                             if time.clock() > t_timeout:
                                 # timeout! something is wrong
-                                print 'TIMEOUT waiting for g_backgnd_video_active##############'
+                                print('TIMEOUT waiting for g_backgnd_video_active##############')
                                 ErrorDlg(self, 'TIMEOUT waiting for g_backgnd_video_active')
                                 break
 
@@ -3354,7 +3362,7 @@ class MyFrame(PBFrame):
 
                         # print '%.3f FG about to seek for SIGNAL %s (offset=%s)' % (time.clock(), current_mov, self.video_offsets[i])
                         if video_lock.locked():
-                            print '############ LOCKED, WILL NEED TO WAIT #######'
+                            print('############ LOCKED, WILL NEED TO WAIT #######')
                         with video_lock:
                             g_player.Seek(video_offset) #wx.FromStart
 
@@ -3376,7 +3384,7 @@ class MyFrame(PBFrame):
                         if i+1 == third_same_as_2nd:
                             strStimAtten = signal_wav_files[indx]
                         i_buffs[i] = indx
-                        print i_buffs[i]
+                        print(i_buffs[i])
                     #--- end ABC
 ##                elif ABX: # ABX, but not ABC
 ##                    #--- begin ABX
@@ -3439,7 +3447,7 @@ class MyFrame(PBFrame):
                         else:
                             i1 = rand_sig_indx_A
                             i2 = rand_sig_indx_B + self.n_signals/2
-                        print 'AB iSignalWavRow=', (self.iSignalWavRow+1)
+                        print('AB iSignalWavRow=', (self.iSignalWavRow+1))
                     else:
                         # non-adaptive or (updown and intensity)
                         if B_is_first:
@@ -3457,7 +3465,7 @@ class MyFrame(PBFrame):
                     strStim += ',%s' % signal_wav_files[i2]
                     i_buffs[1] = i2
                     for i in range(2):
-                        print i_buffs[i]
+                        print(i_buffs[i])
                 else:
                     #--- begin NOT (MULTI_TRIAL_VIDEO_FILES ABX AB)
                     num_wav_files = self.n_signals # used for range of random numbers
@@ -3569,18 +3577,18 @@ class MyFrame(PBFrame):
                         # print '%.3f FG about to PLAY SIG (length = %.1f sec)' % (time.clock(), video_length)
                     else:
                         if video_lock.locked():
-                            print '############ LOCKED, WILL NEED TO WAIT #######'
+                            print('############ LOCKED, WILL NEED TO WAIT #######')
                         with video_lock:
                             video_length = 1e-3 * self.movie_frame.player.Length()
-                        print 'video_length=',video_length
+                        print('video_length=',video_length)
                         if not video_length:
                             # ErrorDlg(self, 'Error: video seems bad (zero length)')
                             video_length = 2.0 #  0.2 truncates 5.0 makes me wait a long time before I can answer
-                            print '##### video appears to have zero length! This problem comes and goes. Will now set to %s seconds' % video_length
+                            print('##### video appears to have zero length! This problem comes and goes. Will now set to %s seconds' % video_length)
                             #bDone = 1
                             #break
                     if video_lock.locked():
-                        print '############ LOCKED, WILL NEED TO WAIT #######'
+                        print('############ LOCKED, WILL NEED TO WAIT #######')
                     with video_lock:
                         self.movie_frame.player.Play()
                     self.movie_timer.Start(video_length*1e3, oneShot=True) # arg in ms. tell me when 0 sec left
@@ -3632,7 +3640,7 @@ class MyFrame(PBFrame):
                 if msToWait >  nMsDelay.value:
                     msToWait -= nMsDelay.value # should not need to do this!!!??????????
                 else:
-                    print 'MSTOWAIT TOO DAMN SHORT!!'
+                    print('MSTOWAIT TOO DAMN SHORT!!')
                 #print 'msToWait=',msToWait
                 #trial_start_time = t2 + msToWait*1e3
 
@@ -3888,7 +3896,7 @@ class MyFrame(PBFrame):
                             bGotResponse = third_same_as_2nd == self.ForcedChoiceVars['Choice'] # True = correct
                         else:
                             bGotResponse = third_same_as_2nd+1 == self.ForcedChoiceVars['Choice'] # True = correct
-                        print 'bGotResponse =',bGotResponse
+                        print('bGotResponse =',bGotResponse)
                         if ADULT_SUBJECT and var['Give feedback']:
                             if bGotResponse:
                                 s = '%.0f is correct' % self.ForcedChoiceVars['Choice']
@@ -3925,7 +3933,7 @@ class MyFrame(PBFrame):
                             # print 'RAW respLatency = %.3f DLL lat in ms = %d' % (respLatency,self.tPlusKey2-timeWillStart.value)
                             respLatency -= fTrialDelay
                             if respLatency < 0:
-                                print '**** respLatency < 0! It is ', respLatency
+                                print('**** respLatency < 0! It is ', respLatency)
                                 respLatency = 0.0
                         else:
                             bGotResponse = 0
@@ -3962,8 +3970,8 @@ class MyFrame(PBFrame):
                     while not dlg.sButt == 'Next':
                         wx.Yield()
                         dlg.GetData() # will write into dlg.SyllableVars, which, because pass by ref, is our copy
-                    print "SyllableVars['Syllable'] = ",SyllableVars['Syllable']
-                    print "SyllableVars['Other'] = ",SyllableVars['Other']
+                    print("SyllableVars['Syllable'] = ",SyllableVars['Syllable'])
+                    print("SyllableVars['Other'] = ",SyllableVars['Other'])
                     dlg.Destroy()
                     
                     bGotResponse = 1
@@ -4088,7 +4096,7 @@ class MyFrame(PBFrame):
                     self.bCorrect[nTrial] = False
                     if self.bIsProbe:
                         if not catchAndProbeVars['Treat probes as no-signals']:
-                            print '******* IMPOSSIBLE: should_respond=F, bGotResponse=T, self.bIsProbe=T, "Treat probes as no-signals"=F'
+                            print('******* IMPOSSIBLE: should_respond=F, bGotResponse=T, self.bIsProbe=T, "Treat probes as no-signals"=F')
                     else:
                         self.nIncorrectCatch[nPhase] += 1
                 self.bCorrectAll[self.nTrialIndexAll] = self.bCorrect[nTrial]
@@ -4204,7 +4212,7 @@ class MyFrame(PBFrame):
                 break
 
             # line 2952 in ContPanView.cpp - GOBACK logic here
-            if var.has_key('Bounce back if miss') and (var['trials in a row'] or var['signals in a row']):
+            if 'Bounce back if miss' in var and (var['trials in a row'] or var['signals in a row']):
                 # print 'checking if bounce-back'
                 bGoBack = 0
                 if var['trials in a row']:
@@ -4235,7 +4243,7 @@ class MyFrame(PBFrame):
                                 # we are done
                                 break
                 if bGoBack:
-                    print 'BOUNCE BACK'
+                    print('BOUNCE BACK')
                     self.abort = 5 # to indicate this type of bounceback
                     break
 
@@ -4410,7 +4418,7 @@ class MyFrame(PBFrame):
 
         self.sound_thread = ThreadClass()
         self.sound_thread.start() # invokes run() in a separate thread of control
-        print 'self.sound_thread.isAlive()=',self.sound_thread.isAlive()
+        print('self.sound_thread.isAlive()=',self.sound_thread.isAlive())
         time.sleep(0.1) # make sure we don't call Signal before backgnd has started
 
         self.analog_io = analog_io
@@ -4430,7 +4438,7 @@ class MyFrame(PBFrame):
         while self.sound_thread.isAlive():
             time.sleep(0.1) # FREE UP CPU ? MAKE EVENT DRIVEN?
             wx.Yield()
-        print 'It took %.3f sec to stop sound thread' % (time.clock() - t0)
+        print('It took %.3f sec to stop sound thread' % (time.clock() - t0))
         return 0
 
     def StartVideoThread(self):
@@ -4442,7 +4450,7 @@ class MyFrame(PBFrame):
                                              self.video_offsets, self.video_lengths,
                                              self.backgnd_mov_index_to_long_video_index)
         self.video_thread.start() # invokes run() in a separate thread of control
-        print 'self.video_thread.isAlive()=',self.video_thread.isAlive()
+        print('self.video_thread.isAlive()=',self.video_thread.isAlive())
         time.sleep(3.0) # make sure we don't call Signal before backgnd has started
 
     def StopVideoThread(self):
@@ -4453,7 +4461,7 @@ class MyFrame(PBFrame):
         while self.video_thread.isAlive():
             time.sleep(0.1) # FREE UP CPU ? MAKE EVENT DRIVEN?
             wx.Yield()
-        print 'It took %.3f sec for video thread to stop' % (time.clock() - t0)
+        print('It took %.3f sec for video thread to stop' % (time.clock() - t0))
         return 0
 
     def gen_flat_top(self, nsamps):
@@ -4508,7 +4516,7 @@ class MyFrame(PBFrame):
 
         counts_to_volts = self.voltage_input_full_scale/math.pow(2.0,31.0) # 32-bit (24-bit A/D shifted left)
         self.sample_rate = 22050
-        print 'self.sample_rate=',self.sample_rate
+        print('self.sample_rate=',self.sample_rate)
         max_f = freq * 10 # you can zoom in, so this can be on the big side
         
         deltaF = float(self.sample_rate) / NSAMPS # python float is C double
@@ -4541,7 +4549,7 @@ class MyFrame(PBFrame):
 
         slope = 2.0 * numpy.pi * freq / self.sample_rate
         c_input_buff = (ctypes.c_float * nsamps_per_input_sec_buff)()
-        print 'nsamps_per_input_sec_buff=',nsamps_per_input_sec_buff
+        print('nsamps_per_input_sec_buff=',nsamps_per_input_sec_buff)
         
         stat = analog_io.AllocateBuffers(self.sample_rate, nsamps_per_output_buff, 0, 0,
                                          1, 0, 0, 0,
@@ -4586,8 +4594,8 @@ class MyFrame(PBFrame):
         if -mn > fs:
             fs = -mn
         fs = float(fs) / math.pow(2.0,31.0) # fs = percent of FS
-        print 'mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
-              (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs)
+        print('mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
+              (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs))
 
         mic_data *= counts_to_volts
 
@@ -4629,8 +4637,8 @@ class MyFrame(PBFrame):
 
             mag_sqrd = self.fft_mag_sqrd(NSAMPS, time_hist)
             dBV = self.sqrd_to_dB(1.0, NSAMPS, mag_sqrd)
-            print '### %.3f kHz is at %.2f dBV' % \
-                  (1e-3*freq_bin*deltaF, dBV[freq_bin] )
+            print('### %.3f kHz is at %.2f dBV' % \
+                  (1e-3*freq_bin*deltaF, dBV[freq_bin] ))
             ave_result += mag_sqrd
 
             offset += NSAMPS/2 # 50% overlap
@@ -4641,8 +4649,8 @@ class MyFrame(PBFrame):
         dBV = self.sqrd_to_dB(1.0, NSAMPS, ave_result)
 
         calc_meas_Vpp = 2*1.414 * (10.0 ** (dBV[freq_bin]/20.0))
-        print '%.3f kHz average is %.2f dBV (%.3fVpp)' % \
-              (1e-3*freq_bin*deltaF, dBV[freq_bin], calc_meas_Vpp)
+        print('%.3f kHz average is %.2f dBV (%.3fVpp)' % \
+              (1e-3*freq_bin*deltaF, dBV[freq_bin], calc_meas_Vpp))
 
         anno1 = 'V_FS setting = %.3f, giving tone of %.3fVpp.' % (self.voltage_input_full_scale, calc_meas_Vpp)
         anno2 = 'If your measurment disagrees, correct V_FS by'
@@ -4687,7 +4695,7 @@ class MyFrame(PBFrame):
         sens = CalInputUsingAcousCalVars['Mic sens'] # in mV/Pa
         sens *= 1000.0  # to microvolts
         sens /= 50118.7 # "subtract" 94 dB - now it's uV at 0 dB SPL
-        print '\nsens is %.5f uV RMS at 0 dB SPL' % sens
+        print('\nsens is %.5f uV RMS at 0 dB SPL' % sens)
         sens *= 1e-6  # in V
 
         micGain_dB = CalInputUsingAcousCalVars['Mic gain']
@@ -4698,7 +4706,7 @@ class MyFrame(PBFrame):
 
         counts_to_volts = self.voltage_input_full_scale/math.pow(2.0,31.0) # 32-bit (24-bit A/D shifted left)
         self.sample_rate = 22050
-        print 'self.sample_rate=',self.sample_rate
+        print('self.sample_rate=',self.sample_rate)
         max_f = 10e3 # you can zoom in, so this can be on the big side
         
         deltaF = float(self.sample_rate) / NSAMPS # python float is C double
@@ -4724,7 +4732,7 @@ class MyFrame(PBFrame):
         play_record_time = nsamps_per_input_sec_buff/float(self.sample_rate)
 
         c_input_buff = (ctypes.c_float * nsamps_per_input_sec_buff)()
-        print 'nsamps_per_input_sec_buff=',nsamps_per_input_sec_buff
+        print('nsamps_per_input_sec_buff=',nsamps_per_input_sec_buff)
         
         stat = analog_io.AllocateBuffers(self.sample_rate, nsamps_per_output_buff, 0, 0,
                                          1, 0, 0, 0,
@@ -4765,8 +4773,8 @@ class MyFrame(PBFrame):
         if -mn > fs:
             fs = -mn
         fs = float(fs) / math.pow(2.0,31.0) # fs = percent of FS
-        print 'mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
-              (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs)
+        print('mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
+              (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs))
 
         mic_data *= counts_to_volts
 
@@ -4811,8 +4819,8 @@ class MyFrame(PBFrame):
             mag_sqrd = self.fft_mag_sqrd(NSAMPS, time_hist)
             dB_SPL = self.sqrd_to_dB(sens, NSAMPS, mag_sqrd)
             indx_max = dB_SPL.argmax()
-            print '### Peak is %.2f dB SPL at %.3f kHz' % \
-                  (dB_SPL[indx_max], 1e-3*indx_max*deltaF)
+            print('### Peak is %.2f dB SPL at %.3f kHz' % \
+                  (dB_SPL[indx_max], 1e-3*indx_max*deltaF))
             ave_result += mag_sqrd
 
             offset += NSAMPS/2 # 50% overlap
@@ -4823,8 +4831,8 @@ class MyFrame(PBFrame):
         dB_SPL = self.sqrd_to_dB(sens, NSAMPS, ave_result)
 
         indx_max = dB_SPL.argmax()
-        print 'Peak is %.2f dB SPL at %.3f kHz' % \
-              (dB_SPL[indx_max], 1e-3*indx_max*deltaF)
+        print('Peak is %.2f dB SPL at %.3f kHz' % \
+              (dB_SPL[indx_max], 1e-3*indx_max*deltaF))
 
         anno1 = 'V_FS setting = %.3f, giving tone of %.2f dB SPL at %.2f KHz.' % \
                 (self.voltage_input_full_scale, dB_SPL[indx_max], 1e-3*indx_max*deltaF)
@@ -4878,7 +4886,7 @@ class MyFrame(PBFrame):
                 sens = IECVars['Mic sens']
                 sens *= 1000.0  # to microvolts
                 sens /= 50118.7 # "subtract" 94 dB - now it's uV at 0 dB SPL
-                print '\nsens is %.5f uV RMS at 0 dB SPL' % sens
+                print('\nsens is %.5f uV RMS at 0 dB SPL' % sens)
                 sens *= 1e-6  # in V
 
                 micGain_dB = IECVars['Mic gain']
@@ -4891,7 +4899,7 @@ class MyFrame(PBFrame):
 
                 counts_to_volts = self.voltage_input_full_scale/math.pow(2.0,31.0) # 32-bit (24-bit A/D shifted left)
                 self.sample_rate = 22050
-                print 'self.sample_rate=',self.sample_rate
+                print('self.sample_rate=',self.sample_rate)
                 max_f = freq * 10 # you can zoom in, so this can be on the big side
                 
                 deltaF = float(self.sample_rate) / NSAMPS # python float is C double
@@ -4966,8 +4974,8 @@ class MyFrame(PBFrame):
                 if -mn > fs:
                     fs = -mn
                 fs = float(fs) / math.pow(2.0,31.0) # fs = percent of FS
-                print 'mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
-                      (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs)
+                print('mic_data min,max as 16-bit: %.0f, %.0f as Volts: %.2f, %.2f, %.2f%%FS' % \
+                      (mn/65536.0, mx/65536.0, mn*counts_to_volts, mx*counts_to_volts, 100.0*fs))
 
                 mic_data *= counts_to_volts
 
@@ -5012,7 +5020,7 @@ class MyFrame(PBFrame):
 
                     mag_sqrd = self.fft_mag_sqrd(NSAMPS, time_hist)
                     dB_SPL = self.sqrd_to_dB(sens, NSAMPS, mag_sqrd)
-                    print '### %.3f kHz is %.2f dB SPL' % (1e-3*freq_bin*deltaF, dB_SPL[freq_bin])
+                    print('### %.3f kHz is %.2f dB SPL' % (1e-3*freq_bin*deltaF, dB_SPL[freq_bin]))
                     ave_result += mag_sqrd
 
                     offset += NSAMPS/2 # 50% overlap
@@ -5056,7 +5064,7 @@ class MyFrame(PBFrame):
         try:
             result = numpy.log10(result) * 20.0
         except:
-            print 'exception! result max, min:',result.max(), result.min()
+            print('exception! result max, min:',result.max(), result.min())
         # result[0] = 0.0 # zero the DC part
         return result
 
@@ -5074,7 +5082,7 @@ class MyFrame(PBFrame):
         try:
             result = numpy.log10(result) * 20.0
         except:
-            print 'exception! result max, min:',result.max(), result.min()
+            print('exception! result max, min:',result.max(), result.min())
         return result
 
     def OnAbout(self, event):
@@ -5206,17 +5214,17 @@ if __name__ == '__main__':
         try:
             os.putenv('SDL_VIDEODRIVER', 'windib') # may be needed for pygame.movie
         except:
-            print 'Error setting SDL_VIDEODRIVER.'
-            print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-            raw_input('Press enter to close this window.')
+            print('Error setting SDL_VIDEODRIVER.')
+            print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+            input('Press enter to close this window.')
             sys.exit(1)
         try:
-            print 'MAIN: about to import pygame'
+            print('MAIN: about to import pygame')
             import pygame
-        except ImportError, target:
-            print 'Software configuration error: %s.' % str(target)
-            print 'Please email %s for assistance.' % config_phys.CONTACT_EMAIL
-            raw_input('Press enter to close this window.')
+        except ImportError as target:
+            print('Software configuration error: %s.' % str(target))
+            print('Please email %s for assistance.' % config_phys.CONTACT_EMAIL)
+            input('Press enter to close this window.')
             sys.exit(1)
 
     if config_phys.RUN_TESTS_NOW:
