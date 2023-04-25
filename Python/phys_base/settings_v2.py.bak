@@ -1,5 +1,5 @@
 import wx
-from .phys import *
+from phys import *
 
 # NOTE: caller needs to init like this:
 #settings.nostepParams = nostepParams
@@ -71,7 +71,7 @@ class Settings_inner(wx.Object):
         for param,units,convFactor in nostepParams:
             if convFactor == 'CHECKBOX':
                 parent.first['nostep'][param] = wx.CheckBox(parent, -1, param, size=(-1,-1))
-                if param not in varStimFirst['nostep']:
+                if not varStimFirst['nostep'].has_key(param):
                     WarnDlg(self.frame, 'Missing value for "'+param+'". I will set it to 0. Please check it.')
                     varStimFirst['nostep'][param] = 0
                 parent.first['nostep'][param].SetValue(varStimFirst['nostep'][param])
@@ -80,7 +80,7 @@ class Settings_inner(wx.Object):
             elif convFactor == 'TEXT':
                 gbs.Add( wx.StaticText(parent, -1, param),
                          (row,col_lab), (1,1), wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.ALL)
-                if param not in varStimFirst['nostep']:
+                if not varStimFirst['nostep'].has_key(param):
                     WarnDlg(self.frame, 'Missing value for "'+param+'". I will set it to blank. Please check it.')
                     varStimFirst['nostep'][param] = ''
                 parent.first['nostep'][param] = wx.TextCtrl(parent, -1, varStimFirst['nostep'][param],
@@ -90,7 +90,7 @@ class Settings_inner(wx.Object):
             elif convFactor == 'FILENAME':
                 gbs.Add( wx.StaticText(parent, -1, param),
                          (row,col_lab), (1,1), wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.ALL)
-                if param not in varStimFirst['nostep']:
+                if not varStimFirst['nostep'].has_key(param):
                     # self.frame.WarnDlg('Missing value for "'+param+'". I will set it to blank. Please check it.')
                     varStimFirst['nostep'][param] = ''
                 parent.first['nostep'][param] = wx.TextCtrl(parent, -1, varStimFirst['nostep'][param],
@@ -231,12 +231,12 @@ class Settings_inner(wx.Object):
             col_last = i
 
         for chan in range(2):
-            if chan not in varStimFirst:
+            if not varStimFirst.has_key(chan):
                 continue
             gbs = wx.GridBagSizer(grid_vgap, grid_hgap)
             row = 0
 
-            if 'Enable' in varStimFirst[chan]:
+            if varStimFirst[chan].has_key('Enable'):
                 # checkbox to enable channel
                 parent.enable[chan] = wx.CheckBox(parent, -1, 'Enable', size=(-1,-1))
                 parent.enable[chan].SetValue(varStimFirst[chan]['Enable'])
@@ -416,7 +416,7 @@ class Settings_inner(wx.Object):
                 if convFactor == 'TEXT':
                     continue
                 if convFactor == 0:
-                    print('ERROR: no conv factor !!')
+                    print 'ERROR: no conv factor !!'
                 else:
                     value /= convFactor
                 #
@@ -429,9 +429,9 @@ class Settings_inner(wx.Object):
                 # Step had them defined too.
                 groupLast,paramLast,valueLast = varStimLast[xy][ii]
                 if groupLast != group:
-                    print('ERROR 1')
+                    print 'ERROR 1'
                 if paramLast != param:
-                    print('ERROR 2')
+                    print 'ERROR 2'
                 if convFactor != 0:
                     valueLast /= convFactor
                 parent.last[group][place].SetValue('%g' % valueLast)
@@ -485,13 +485,13 @@ class Settings_inner(wx.Object):
             if show:
                 # update value
                 if stimType == 'Wav':
-                    if label in self.varStimFirst[chan]:
+                    if self.varStimFirst[chan].has_key(label):
                         varFirst = self.varStimFirst[chan][label]
                     else:
                         varFirst = '' # we don't have a value
                     self.parent.first[chan][param].SetValue(varFirst)
                 else:
-                    if label in self.varStimFirst[chan]:
+                    if self.varStimFirst[chan].has_key(label):
                         varFirst = self.varStimFirst[chan][label] / convFactor
                     else:
                         varFirst = 0 # we don't have a value, so default of 0
@@ -552,7 +552,7 @@ class Settings_inner(wx.Object):
                 found = 1
                 break
         if not found:
-            print('ERROR - Choice box not found')
+            print 'ERROR - Choice box not found'
             return
         stimType = evt.GetString()
         # print 'Ch',chan+1, stimType
@@ -596,7 +596,7 @@ class Settings_inner(wx.Object):
                         break
 
         if not found:
-            print('ERROR: checkbox not found.')
+            print 'ERROR: checkbox not found.'
             return
 
         isChecked = theCheckbox.GetValue()
@@ -663,9 +663,9 @@ class Settings_inner(wx.Object):
                 varFirst = convFactor * float(varFirst)
             self.varStimFirst['top'][param] = varFirst
         for chan in range(2):
-            if chan not in self.varStimFirst:
+            if not self.varStimFirst.has_key(chan):
                 continue
-            if 'Enable' in self.varStimFirst[chan]:
+            if self.varStimFirst[chan].has_key('Enable'):
                 self.varStimFirst[chan]['Enable'] = self.parent.enable[chan].GetValue()
                 
             type = self.parent.stimType[chan].GetStringSelection()
@@ -713,7 +713,7 @@ class Settings_inner(wx.Object):
                                 found = 1
                                 break
                 if not found:
-                    print('ERROR: NOT FOUND')
+                    print 'ERROR: NOT FOUND'
                 if param == 'WavFiles':
                     self.varStimStep[xy].append((group,param,0))
                     self.varStimLast[xy].append((group,param,0))
