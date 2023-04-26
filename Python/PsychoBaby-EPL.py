@@ -184,7 +184,7 @@ if hw.TOY_CONTROLLER == 'TDT_RP2' and config_phys.ON_NET:
     tdt_sys3.rcoDir = 'Z:\\dev\\py-module-dev\\Tdt'
 
 if config_phys.DEV_DLL:
-    analog_io_fn = "z:\\dev\\swbaby\\SoundThread24\\Release\\SoundThread.dll" # must build with USE24BIT
+    analog_io_fn = 'D:\\Development\\Arenberg\\OPP\\jga_opp\\DLL\\SoundThread.dll'
 else:
     analog_io_fn = os.path.join(sys.prefix,'SWBaby_DLLs','SoundThread.dll')
 # from error_codes.h
@@ -201,9 +201,8 @@ try:
     analog_io.SetDebugMode(0)
     dll_loaded = True
     # print 'loaded dll'
-except WindowsError as xxx_todo_changeme6: # GOOD
-    (errno, strerror) = xxx_todo_changeme6.args # GOOD
-    print('WindowsError loading "%s": %s' % (analog_io_fn, strerror))
+except WindowsError as ex: # GOOD
+    print('WindowsError loading "%s": %s' % (analog_io_fn, ex.args[1]))
 except Exception as target: # good
     print('ERROR loading %s: %s' % (analog_io_fn, str(target)))
 if not dll_loaded:

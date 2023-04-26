@@ -53,9 +53,9 @@ if hw.TOY_CONTROLLER == 'FTDI':
     FT_OK = 0
 
 # locally developed modules
-from .phys_base import settings_v2 as settings
-from .phys_base.phys import *
-from . import pb
+from phys_base import settings_v2 as settings
+from phys_base.phys import *
+import pb
 
 if hw.TOY_CONTROLLER == 'TDT_RP2' or hw.devAtten  == 'TDT_PA5':
     from phys import tdt_sys3
