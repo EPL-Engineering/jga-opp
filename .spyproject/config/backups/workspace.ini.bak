@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['Python\\PsychoBaby-EPL.py', 'Python\\config_phys.py', 'Python\\hw_pb.py', 'Python\\phys_base\\phys.py', 'Python\\psychobaby_v19.py']
+recent_files = ['Python\\PsychoBaby-EPL.py', 'Python\\config_phys.py', 'Python\\hw_pb.py', 'Python\\phys_base\\phys.py', 'Python\\psychobaby_v19.py', 'Python\\phys_base\\settings_v2.py']
 
 [main]
 version = 0.2.0
