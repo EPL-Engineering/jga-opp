@@ -2,6 +2,26 @@ asmInfo = NET.addAssembly(fullfile('D:\Development\Arenberg\OPP\jga_opp\LabVIEW\
 
 
 Fs = 50000;
+F = 500;
+T = 1;
+duration = 0.25;
+ramp = 0.01;
+
+npts = round(Fs * T);
+tone = zeros(npts, 1);
+noise = tone;
+
+nptsDur = round(Fs * duration);
+
+nptsRamp = floor(Fs * ramp);
+hw = hanning(nptsRamp * 2);
+win = [hw(1:nptsRamp); ones(nptsDur-length(hw), 1); hw(nptsRamp+1:end)];
+
+
+t = (0:nptsDur-1) / nptsDur * T;
+y = sin(2*pi*F*t(:));
+tone(1:nptsDur) = y .* win;
+noise(1:nptsDur) = normrnd(0, 1, nptsDur, 1) .* win;
 
 info = audiodevinfo;
 
@@ -9,14 +29,15 @@ info = audiodevinfo;
 streamer = OPP.AudioStreamer;
 streamer.Initialize(true);
 streamer.SetConfig(info.output(2).Name, Fs);
-% streamer.SetNumReps(3);
-streamer.SetSignal('caregiver', '500-Hz tone', ones(1,3));
-streamer.SetSignal('waver', '500-Hz tone', ones(1,3));
-streamer.SetSignal('background', '500-Hz tone', ones(1,3));
-streamer.SetSignal('signal', 'noise burst', ones(1,3));
+% streamer.SetConfig('asdfadsf', Fs);
+streamer.SetNumReps(3);
+streamer.SetSignal('caregiver', '500-Hz tone', tone);
+streamer.SetSignal('waver', '500-Hz tone', tone);
+streamer.SetSignal('background', '500-Hz tone', tone);
+streamer.SetSignal('signal', 'noise burst', noise);
 
-AudioStreamerTest(streamer);
-
+h = AudioStreamerTest(streamer);
+uiwait(h.UIFigure);
 
 streamer.Close();
 
