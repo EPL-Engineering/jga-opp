@@ -1,4 +1,8 @@
-result = webread('http://169.254.128.32/datastore/mix/chan/0');
-disp(result);
+baseURL = "http://169.254.128.32/datastore/";
 
-result = webwrite('http://169.254.128.32/datastore/mix/chan/1/matrix/aux/0/send', 'json={"value":0.01}');
+% result = webread('http://169.254.128.32/datastore/mix/chan/0');
+% disp(result);
+
+webread(baseURL + "mix/chan/0")
+% webwrite(baseURL + "mix/chan/0/matrix/fader", 'json={"value":1.0}');
+% webwrite(baseURL + "mix/chan/0/matrix/mute", 'json={"value":1.0}');

@@ -28,7 +28,7 @@ info = audiodevinfo;
 
 streamer = OPP.AudioStreamer;
 streamer.Initialize(true);
-streamer.SetConfig(info.output(2).Name, Fs);
+streamer.SetConfig(info.output(2).Name, 'mic', Fs);
 % streamer.SetConfig('asdfadsf', Fs);
 streamer.SetNumReps(3);
 streamer.SetSignal('caregiver', '500-Hz tone', tone);
