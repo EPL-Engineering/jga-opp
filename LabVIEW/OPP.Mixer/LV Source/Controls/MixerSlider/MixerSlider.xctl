@@ -9,6 +9,32 @@
 	<Property Name="NI.XItem.Express" Type="Bool">false</Property>
 	<Property Name="NI.XItem.Name" Type="Str">XControl 1</Property>
 	<Property Name="NI.XItem.SupportsFatalErrorOut" Type="Bool">false</Property>
+	<Item Name="Properties" Type="Folder">
+		<Item Name="Mute" Type="Property Folder">
+			<Property Name="NI.LibItem.Prop.Identifier" Type="Str">Mute</Property>
+			<Property Name="NI.LibItem.Prop.Localized.LongName" Type="Str">Mute</Property>
+			<Item Name="Mute Read.vi" Type="Property VI" URL="../Mute Read.vi"/>
+			<Item Name="Mute Write.vi" Type="Property VI" URL="../Mute Write.vi"/>
+		</Item>
+		<Item Name="Mute enable" Type="Property Folder">
+			<Property Name="NI.LibItem.Prop.Identifier" Type="Str">Mute enable</Property>
+			<Property Name="NI.LibItem.Prop.Localized.LongName" Type="Str">Mute enable</Property>
+			<Item Name="Mute enable Read.vi" Type="Property VI" URL="../Mute enable Read.vi"/>
+			<Item Name="Mute enable Write.vi" Type="Property VI" URL="../Mute enable Write.vi"/>
+		</Item>
+		<Item Name="Slider enable" Type="Property Folder">
+			<Property Name="NI.LibItem.Prop.Identifier" Type="Str">Slider enable</Property>
+			<Property Name="NI.LibItem.Prop.Localized.LongName" Type="Str">Slider enable</Property>
+			<Item Name="Slider enable Read.vi" Type="Property VI" URL="../Slider enable Read.vi"/>
+			<Item Name="Slider enable Write.vi" Type="Property VI" URL="../Slider enable Write.vi"/>
+		</Item>
+		<Item Name="URL" Type="Property Folder">
+			<Property Name="NI.LibItem.Prop.Identifier" Type="Str">URL</Property>
+			<Property Name="NI.LibItem.Prop.Localized.LongName" Type="Str">URL</Property>
+			<Item Name="URL Read.vi" Type="Property VI" URL="../URL Read.vi"/>
+			<Item Name="URL Write.vi" Type="Property VI" URL="../URL Write.vi"/>
+		</Item>
+	</Item>
 	<Item Name="Data.ctl" Type="Ability VI" URL="../Data.ctl">
 		<Property Name="NI.XItem.Name" Type="Str">Data</Property>
 	</Item>
