@@ -31,7 +31,7 @@ classdef Ontrak
          try
             obj.deviceHandle = calllib('AduHid64', 'OpenAduDevice', 1000); % if only one ADU is connected
          catch
-            error('Failed to initialize Ontrack ADU device. Make sure it is connected and try again.');
+            error('Failed to initialize Ontrak ADU device. Make sure it is connected and try again.');
          end
 
 %          obj.TurnOff();
@@ -92,7 +92,7 @@ classdef Ontrak
 
          % check result of write
          if result == 0
-            error('Error writing to Ontrack ADU device.');
+            error('Error writing to Ontrak ADU device.');
          end
       end
 
@@ -112,7 +112,7 @@ classdef Ontrak
 
          % check result of write
          if result == 0
-            error('Error readin from Ontrack ADU device.');
+            error('Error readin from Ontrak ADU device.');
          end
 
          % read result
@@ -124,7 +124,7 @@ classdef Ontrak
 
          % check result of write
          if result == 0
-            error('Error readin from Ontrack ADU device.');
+            error('Error readin from Ontrak ADU device.');
          end
 
          x = char(ptrResult.value);
