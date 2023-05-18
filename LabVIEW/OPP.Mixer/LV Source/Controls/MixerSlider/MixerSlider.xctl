@@ -9,6 +9,9 @@
 	<Property Name="NI.XItem.Express" Type="Bool">false</Property>
 	<Property Name="NI.XItem.Name" Type="Str">XControl 1</Property>
 	<Property Name="NI.XItem.SupportsFatalErrorOut" Type="Bool">false</Property>
+	<Item Name="Methods" Type="Folder">
+		<Item Name="Toggle Mute.vi" Type="Method VI" URL="../Toggle Mute.vi"/>
+	</Item>
 	<Item Name="Properties" Type="Folder">
 		<Item Name="Mute" Type="Property Folder">
 			<Property Name="NI.LibItem.Prop.Identifier" Type="Str">Mute</Property>
