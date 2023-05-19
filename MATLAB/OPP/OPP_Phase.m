@@ -45,6 +45,17 @@ classdef OPP_Phase
       end
 
       %--------------------------------------------------------------------
+      function obj = UpdateSettings(obj, settings)
+         obj.settings = settings;
+
+         if isequal(obj.direction, 'forward')
+            obj.passIf = obj.settings.passIf;
+         else
+            obj.passIf = obj.settings.passBounceBackIf;
+         end
+      end
+
+      %--------------------------------------------------------------------
       function obj = SetWaveformName(obj, destination, name)
          obj.Data.(destination) = name;
       end
@@ -90,43 +101,67 @@ classdef OPP_Phase
             obj.Data.falseAlarmRate = sum(~obj.Data.correct(ifilt)) / length(ifilt);
          end
 
-         lastN = find(~obj.Data.hasSignal(1:obj.trialNum), obj.passIf.outOfNumNonSignal, 'last');
-         if lastN >= obj.passIf.outOfNumNonSignal
+         lastN = find(~obj.Data.hasSignal(1:obj.trialNum), obj.passIf.outOfNumNoSignal, 'last');
+         if length(lastN) >= obj.passIf.outOfNumNoSignal
             obj.lastN_nosignal = sum(obj.Data.correct(lastN));
          end
-         nosigCritMet = obj.lastN_nosignal >= obj.passIf.numNonSignalCorrect;
+         nosigCritMet = obj.lastN_nosignal >= obj.passIf.numNoSignalCorrect;
 
          lastN = find(obj.Data.hasSignal(1:obj.trialNum), obj.passIf.outOfNumSignal, 'last');
-         if lastN >= obj.passIf.outOfNumSignal
+         if length(lastN) >= obj.passIf.outOfNumSignal
             obj.lastN_signal = sum(obj.Data.correct(lastN));
          end
          sigCritMet = obj.lastN_signal >= obj.passIf.numSignalCorrect;
 
+         trialsCritMet = false;
+         if length(obj.Data.correct) >= obj.passIf.outOfNumTrials
+            c = flip(obj.Data.correct);
+            n = sum(c(1:obj.passIf.outOfNumTrials));
+            trialsCritMet = n > obj.passIf.numTrialsCorrect;
+         end
+
          result = 'continue';
          message = '';
 
-         if nosigCritMet && sigCritMet
-            result = 'passed';
-            message = sprintf('Satisfied hit (%d / %d) and false alarm (%d /%d) criteria', ...
-               obj.passIf.numSignalCorrect, obj.passIf.outOfNumSignal, ...
-               obj.passIf.numNonSignalCorrect, obj.passIf.outOfNumNonSignal ...
-               );
+         if isequal(obj.passIf.criterion, 'both')
+            if nosigCritMet && sigCritMet
+               % --- PASS CRITERION #1: consecutive hits and false alarms ---
+               result = 'passed';
+               message = sprintf('Satisfied hit (%d/%d) and false alarm (%d/%d) criteria', ...
+                  obj.passIf.numSignalCorrect, obj.passIf.outOfNumSignal, ...
+                  obj.passIf.numNoSignalCorrect, obj.passIf.outOfNumNoSignal ...
+                  );
+            end
+         elseif isequal(obj.passIf.criterion, 'trials')
+            if trialsCritMet
+               % --- PASS CRITERION #2: consecutive correct (regardless of trial type) ---
+               result = 'passed';
+               message = sprintf('Satisfied correct response (%d/%d) criterion', ...
+                  obj.passIf.numTrialsCorrect, obj.passIf.outOfNumTrials ...
+                  );
+            end
          elseif obj.trialNum > obj.passIf.maxNumTrials && obj.settings.bounceBack.ifMaxNumTrials
+            % --- FAIL CRITERION #1: max number of trials ---
             result = 'failed';
             message = sprintf('Reached maximum number of trials allowed (%d)', obj.passIf.maxNumTrials);
          else
-            if isequal(obj.settings.bounceBack.consecutiveMissType, 'signals')
-               lastN = find(obj.Data.hasSignal(1:obj.trialNum), obj.settings.bounceBack.ifNumConsecutiveMiss, 'last');
-               if obj.Data.correct(lastN) >= obj.settings.bounceBack.ifNumConsecutiveMiss
-                  result = 'failed';
-                  message = sprintf('Missed %d signals in a row', obj.settings.bounceBack.ifNumConsecutiveMiss);
-               end
-            elseif isequal(obj.settings.bounceBack.consecutiveMissType, 'trials')
-               if length(obj.Data.correct) >= obj.settings.bounceBack.ifNumConsecutiveMiss
-                  c = flip(obj.Data.correct);
-                  if all(c(1:obj.settings.bounceBack.ifNumConsecutiveMiss))
+            if obj.settings.bounceBack.ifConsecutiveMiss
+            % --- FAIL CRITERION #2: consecutive misses ---
+               if isequal(obj.settings.bounceBack.consecutiveMissWhat, 'signals')
+                  % --- FAIL CRITERION #2a: consecutive misses on signal trials ---
+                  lastN = find(obj.Data.hasSignal(1:obj.trialNum), obj.settings.bounceBack.numConsecutiveMiss, 'last');
+                  if obj.Data.correct(lastN) >= obj.settings.bounceBack.numConsecutiveMiss
                      result = 'failed';
-                     message = sprintf('Missed %d trials in a row', obj.settings.bounceBack.ifNumConsecutiveMiss);
+                     message = sprintf('Missed %d signals in a row', obj.settings.bounceBack.ifNumConsecutiveMiss);
+                  end
+               elseif isequal(obj.settings.bounceBack.consecutiveMissWhat, 'trials')
+                  % --- FAIL CRITERION #2b: consecutive misses on trials of any kind ---
+                  if length(obj.Data.correct) >= obj.settings.bounceBack.numConsecutiveMiss
+                     c = flip(obj.Data.correct);
+                     if all(c(1:obj.settings.bounceBack.numConsecutiveMiss))
+                        result = 'failed';
+                        message = sprintf('Missed %d trials in a row', obj.settings.bounceBack.numConsecutiveMiss);
+                     end
                   end
                end
             end
@@ -152,7 +187,7 @@ classdef OPP_Phase
             D{2,1} = sprintf('%d %%', round(100*obj.Data.falseAlarmRate));
          end
          if obj.lastN_nosignal > -1
-            D{1,2} = sprintf('%d / %d', obj.lastN_nosignal, obj.passIf.outOfNumNonSignal);
+            D{2,2} = sprintf('%d / %d', obj.lastN_nosignal, obj.passIf.outOfNumNoSignal);
          end
          D{3,1} = sprintf('%d', length(obj.Data.correct));
       end
