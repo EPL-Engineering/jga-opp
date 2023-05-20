@@ -30,6 +30,7 @@ classdef VLC < matlab.mixin.SetGet
   properties (Access = private)
     requestURL
     password = 'QvGkByH97AOxRvhP';
+    playStarted = false;
   end
   
   methods
@@ -77,6 +78,16 @@ classdef VLC < matlab.mixin.SetGet
       end
     end
     
+    % added by KEH: so we can play a short burst then resume without it
+    % starting over
+    function playSpecial(this)
+       this.play();
+       if ~this.playStarted
+          this.seek(10);
+          this.playStarted = true;
+       end
+    end
+
     % pause playback
     function pause(this)
       this.request('c=pause');
@@ -124,6 +135,7 @@ classdef VLC < matlab.mixin.SetGet
     % empty the playlist
     function clear(this)
       this.request('c=clear');
+      this.playStarted = false;
     end
     
     % quit VLC and delete object

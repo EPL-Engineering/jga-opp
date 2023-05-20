@@ -7,6 +7,7 @@ classdef OPP_Phase
       StimValue
       Data
       Started = false;
+      TrialResult
    end
 
    properties (SetAccess = private)
@@ -32,7 +33,7 @@ classdef OPP_Phase
          if isequal(direction, 'forward')
             obj.passIf = obj.settings.passIf;
          else
-            obj.passIf = obj.settings.passBounceBackIf;
+            obj.passIf = obj.settings.passBounceIf;
          end
 
          obj.Started = false;
@@ -51,8 +52,11 @@ classdef OPP_Phase
          if isequal(obj.direction, 'forward')
             obj.passIf = obj.settings.passIf;
          else
-            obj.passIf = obj.settings.passBounceBackIf;
+            obj.passIf = obj.settings.passBounceIf;
          end
+
+         obj.Data.hasSignal = obj.Data.hasSignal(1:length(obj.Data.correct));
+         obj = obj.AddBlock();
       end
 
       %--------------------------------------------------------------------
@@ -72,6 +76,22 @@ classdef OPP_Phase
 
       %--------------------------------------------------------------------
       function [obj, result, message] = ProcessResult(obj, haveResponse, responseTime, reward)
+
+         obj.Started = true;
+         
+         if obj.CurrentTrialHasSignal()
+            if haveResponse
+               obj.TrialResult = 'hit';
+            else
+               obj.TrialResult = 'miss';
+            end
+         else
+            if haveResponse
+               obj.TrialResult = 'false alarm';
+            else
+               obj.TrialResult = 'withhold';
+            end
+         end
 
          isCorrect = obj.CurrentTrialHasSignal() && haveResponse;
          isCorrect = isCorrect || (~obj.CurrentTrialHasSignal() && ~haveResponse);
@@ -117,30 +137,26 @@ classdef OPP_Phase
          if length(obj.Data.correct) >= obj.passIf.outOfNumTrials
             c = flip(obj.Data.correct);
             n = sum(c(1:obj.passIf.outOfNumTrials));
-            trialsCritMet = n > obj.passIf.numTrialsCorrect;
+            trialsCritMet = n >= obj.passIf.numTrialsCorrect;
          end
 
          result = 'continue';
          message = '';
 
-         if isequal(obj.passIf.criterion, 'both')
-            if nosigCritMet && sigCritMet
-               % --- PASS CRITERION #1: consecutive hits and false alarms ---
-               result = 'passed';
-               message = sprintf('Satisfied hit (%d/%d) and false alarm (%d/%d) criteria', ...
-                  obj.passIf.numSignalCorrect, obj.passIf.outOfNumSignal, ...
-                  obj.passIf.numNoSignalCorrect, obj.passIf.outOfNumNoSignal ...
-                  );
-            end
-         elseif isequal(obj.passIf.criterion, 'trials')
-            if trialsCritMet
-               % --- PASS CRITERION #2: consecutive correct (regardless of trial type) ---
-               result = 'passed';
-               message = sprintf('Satisfied correct response (%d/%d) criterion', ...
-                  obj.passIf.numTrialsCorrect, obj.passIf.outOfNumTrials ...
-                  );
-            end
-         elseif obj.trialNum > obj.passIf.maxNumTrials && obj.settings.bounceBack.ifMaxNumTrials
+         if isequal(obj.passIf.criterion, 'both') && nosigCritMet && sigCritMet
+            % --- PASS CRITERION #1: consecutive hits and false alarms ---
+            result = 'passed';
+            message = sprintf('Satisfied hit (%d/%d) and false alarm (%d/%d) criteria', ...
+               obj.passIf.numSignalCorrect, obj.passIf.outOfNumSignal, ...
+               obj.passIf.numNoSignalCorrect, obj.passIf.outOfNumNoSignal ...
+               );
+         elseif isequal(obj.passIf.criterion, 'trials') && trialsCritMet
+            % --- PASS CRITERION #2: consecutive correct (regardless of trial type) ---
+            result = 'passed';
+            message = sprintf('Satisfied correct response (%d/%d) criterion', ...
+               obj.passIf.numTrialsCorrect, obj.passIf.outOfNumTrials ...
+               );
+         elseif obj.trialNum >= obj.passIf.maxNumTrials && obj.settings.bounceBack.ifMaxNumTrials
             % --- FAIL CRITERION #1: max number of trials ---
             result = 'failed';
             message = sprintf('Reached maximum number of trials allowed (%d)', obj.passIf.maxNumTrials);
@@ -150,15 +166,15 @@ classdef OPP_Phase
                if isequal(obj.settings.bounceBack.consecutiveMissWhat, 'signals')
                   % --- FAIL CRITERION #2a: consecutive misses on signal trials ---
                   lastN = find(obj.Data.hasSignal(1:obj.trialNum), obj.settings.bounceBack.numConsecutiveMiss, 'last');
-                  if obj.Data.correct(lastN) >= obj.settings.bounceBack.numConsecutiveMiss
+                  if length(lastN) >= obj.settings.bounceBack.numConsecutiveMiss && ~any(obj.Data.correct(lastN))
                      result = 'failed';
-                     message = sprintf('Missed %d signals in a row', obj.settings.bounceBack.ifNumConsecutiveMiss);
+                     message = sprintf('Missed %d signals in a row', obj.settings.bounceBack.numConsecutiveMiss);
                   end
                elseif isequal(obj.settings.bounceBack.consecutiveMissWhat, 'trials')
                   % --- FAIL CRITERION #2b: consecutive misses on trials of any kind ---
                   if length(obj.Data.correct) >= obj.settings.bounceBack.numConsecutiveMiss
                      c = flip(obj.Data.correct);
-                     if all(c(1:obj.settings.bounceBack.numConsecutiveMiss))
+                     if ~any(c(1:obj.settings.bounceBack.numConsecutiveMiss))
                         result = 'failed';
                         message = sprintf('Missed %d trials in a row', obj.settings.bounceBack.numConsecutiveMiss);
                      end
