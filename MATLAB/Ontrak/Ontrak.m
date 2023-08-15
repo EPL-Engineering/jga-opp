@@ -45,6 +45,21 @@ classdef Ontrak
          if useMotor, bitMask = bitMask + 4; end
 
          obj.WriteAduDevice(bitMask);
+%          fprintf('write bitmask = %d\n', bitMask);
+
+         nwait = 50;
+         ntries = 0;
+%          tic
+         while ntries < nwait
+             ntries = ntries + 1;
+%              pause(2);
+             readMask = obj.ReadAduDevice();
+%              fprintf('%d: %d\n', ntries, readMask);
+             if readMask == bitMask
+                 break;
+             end
+         end
+%          disp(toc);
       end
 
       %--------------------------------------------------------------------
@@ -55,6 +70,7 @@ classdef Ontrak
       %--------------------------------------------------------------------
       function [toy1, toy2, motor] = GetState(obj)
          bitMask = obj.ReadAduDevice();
+%          fprintf('read bitmask = %d\n', bitMask);
          toy1 = bitand(bitMask, 1) > 0;
          toy2 = bitand(bitMask, 2) > 0;
          motor = bitand(bitMask, 4) > 0;
@@ -65,6 +81,7 @@ classdef Ontrak
          if ~isempty(obj.deviceHandle)
             calllib('AduHid64', 'CloseAduDevice', obj.deviceHandle);
             obj.deviceHandle = [];
+            disp('Closed Ontrak library');
          end
       end
 

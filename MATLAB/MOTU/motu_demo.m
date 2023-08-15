@@ -1,5 +1,5 @@
 % baseURL = "http://169.254.128.32/datastore/";
-baseURL = "http://169.254.221.196/datastore/";
+baseURL = "http://localhost:1280/datastore/";
 result = webread(baseURL);
 % result = webread('http://169.254.128.32/datastore/mix/chan/0');
 % disp(result);

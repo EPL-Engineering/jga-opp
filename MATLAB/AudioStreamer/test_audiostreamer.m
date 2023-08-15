@@ -1,4 +1,4 @@
-asmInfo = NET.addAssembly(fullfile('D:\Development\Arenberg\OPP\jga_opp\LabVIEW\Build', 'OPP.AudioStreamer.dll'));
+asmInfo = NET.addAssembly(fullfile('C:\AcousticPTC\OPP\OPP', 'OPP.AudioStreamer.dll'));
 
 
 Fs = 50000;
@@ -28,7 +28,7 @@ info = audiodevinfo;
 
 streamer = OPP.AudioStreamer;
 streamer.Initialize(true);
-streamer.SetConfig(info.output(2).Name, 'mic', Fs);
+streamer.SetConfig(info.output(4).Name, 'mic', Fs);
 % streamer.SetConfig('asdfadsf', Fs);
 streamer.SetNumReps(3);
 streamer.SetSignal('caregiver', '500-Hz tone', tone);
@@ -36,7 +36,7 @@ streamer.SetSignal('waver', '500-Hz tone', tone);
 streamer.SetSignal('background', '500-Hz tone', tone);
 streamer.SetSignal('signal', 'noise burst', noise);
 
-h = AudioStreamerTest(streamer);
+h = AudioStreamerTest(streamer, []);
 uiwait(h.UIFigure);
 
 streamer.Close();
