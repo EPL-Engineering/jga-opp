@@ -1,4 +1,5 @@
-asmInfo = NET.addAssembly(fullfile('C:\AcousticPTC\OPP\OPP', 'OPP.AudioStreamer.dll'));
+dllPath = 'D:\Development\Arenberg\jga_opp\LabVIEW\OPP.AudioStreamer\Build\OPP.AudioStreamer.dll';
+asmInfo = NET.addAssembly(dllPath);
 
 
 Fs = 50000;
@@ -28,7 +29,7 @@ info = audiodevinfo;
 
 streamer = OPP.AudioStreamer;
 streamer.Initialize(true);
-streamer.SetConfig(info.output(4).Name, 'mic', Fs);
+streamer.SetConfig('Out 1-24 (MOTU Pro Audio)','Microphone (HD Pro Webcam C920)', Fs);
 % streamer.SetConfig('asdfadsf', Fs);
 streamer.SetNumReps(3);
 streamer.SetSignal('caregiver', '500-Hz tone', tone);
