@@ -1,5 +1,5 @@
 # Observer-based psychoacoustic procedure
-![OPP Diagram](https://github.com/EPL-Engineering/jga-opp/assets/116917155/a6ced50c-1e84-466a-bff5-526d9cc671f6)
+![OPP Diagram](https://github.com/EPL-Engineering/jga-opp/assets/116917155/eb5857e1-a1e2-48d4-98ef-6e56fddb12e7)
 
 [Help](https://epl-engineering.github.io/jga-opp/)
 
