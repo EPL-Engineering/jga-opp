@@ -5,10 +5,17 @@ classdef Ontrak
 
    properties (SetAccess = private)
       deviceHandle = [];
+      debug = false;
+      debugValue = 0;
    end
 
    methods
-      function obj = Ontrak()
+      function obj = Ontrak(debugMode)
+         if nargin < 1
+            debugMode = false;
+         end
+         obj.debug = debugMode;
+
          % Ontrak: Construct an instance of this class
 
          % --- Load library ---
@@ -101,6 +108,12 @@ classdef Ontrak
             error('Cannot write to Ontrak ADU. Device is not initialized.');
          end
 
+         if obj.debug
+            obj.debugValue = val;
+            fprintf('Ontrak debug value = %d\n', val);
+            return;
+         end
+
          data = int8(sprintf('MK%d', val));
 
          result = calllib('AduHid64', 'WriteAduDevice', obj.deviceHandle, ...
@@ -119,7 +132,12 @@ classdef Ontrak
          if isempty(obj.deviceHandle)
             error('Cannot read from Ontrak ADU. Device is not initialized.');
          end
-         
+
+         if obj.debug
+            val = obj.debugValue;
+            return;
+         end
+
          % send read request
          data = int8('PK');
 

@@ -208,6 +208,11 @@ classdef OPP_Phase
          D{3,1} = sprintf('%d', length(obj.Data.correct));
       end
 
+      %--------------------------------------------------------------------
+      function N = GetNumberOfTrials(obj)
+         N = length(obj.Data.response);
+      end
+
    end
 
    %--------------------------------------------------------------------------

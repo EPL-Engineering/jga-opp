@@ -35,7 +35,7 @@ classdef VLC < matlab.mixin.SetGet
   
   methods
     
-    function this = VLC()
+     function this = VLC(varargin)
       persistent retry %#ok<*NASGU>
       this.requestURL = sprintf('http://127.0.0.1:%d/request.json',this.Port);
       try
@@ -44,6 +44,15 @@ classdef VLC < matlab.mixin.SetGet
         if isempty(retry) && ~isempty([strfind(e.message,'java.net.ConnectException') strfind(e.message,'java.net.SocketTimeoutException')])
           args = sprintf('--extraintf http --http-host 127.0.0.1 --http-port %d --http-password "%s" --http-src "%s"',...
             this.Port,this.password,fileparts(mfilename('fullpath')));
+
+          if nargin > 0
+             userArgs = '';
+             for k = 1:nargin
+                userArgs = [userArgs ' ' varargin{k}]; %#ok<AGROW> 
+             end
+             args = [userArgs ' ' args];
+          end
+
           if ispc
             if exist('C:\Program Files (x86)\VideoLAN\VLC\vlc.exe','file')
               [~,~] = dos(['"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe" ' args ' &']);
