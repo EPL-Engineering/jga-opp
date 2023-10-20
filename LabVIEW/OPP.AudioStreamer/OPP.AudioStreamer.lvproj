@@ -93,7 +93,7 @@
 				<Property Name="DotNETAssembly_signAssembly" Type="Bool">false</Property>
 				<Property Name="DotNETAssembly_StrongNameKeyFileItemID" Type="Ref"></Property>
 				<Property Name="DotNETAssembly_StrongNameKeyGUID" Type="Str">{CB972244-F220-4258-906A-C0761A154BEC}</Property>
-				<Property Name="Source[0].itemID" Type="Str">{78B99115-2DF7-4901-A366-50CD1BF4D280}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{00CAF2A0-6AED-4201-9CF9-03EE81D9D01B}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>
@@ -323,6 +323,74 @@
 				<Property Name="Source[17].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.IsOutputDeviceValid.vi</Property>
 				<Property Name="Source[17].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[17].type" Type="Str">ExportedAssemblyVI</Property>
+				<Property Name="Source[18].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">Bool</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDir" Type="Int">1</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoName" Type="Str">returnvalue</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[0]VIProtoOutputIdx" Type="Int">0</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]MethodName" Type="Str">IsTrainer</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIName" Type="Str">AudioStreamer.IsTrainer.vi</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoConNum" Type="Int">0</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDataType" Type="Str">Bool</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDir" Type="Int">4</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">trainer</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfoVIDocumentation" Type="Str"></Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
+				<Property Name="Source[18].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">2</Property>
+				<Property Name="Source[18].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.IsTrainer.vi</Property>
+				<Property Name="Source[18].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[18].type" Type="Str">ExportedAssemblyVI</Property>
+				<Property Name="Source[19].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDir" Type="Int">1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoName" Type="Str">returnvalue</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[0]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoConNum" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDataType" Type="Str">String</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDir" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">destination</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoConNum" Type="Int">5</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDataType" Type="Str">String</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDir" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoIutputIdx" Type="Int">5</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoName" Type="Str">name</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[2]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoConNum" Type="Int">7</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDataType" Type="Str">Array</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDir" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoIutputIdx" Type="Int">7</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoName" Type="Str">data</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[3]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoConNum" Type="Int">11</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoDir" Type="Int">6</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoIutputIdx" Type="Int">11</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoName" Type="Str">error__32in__32__40no__32error__41</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[4]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]MethodName" Type="Str">SetSignal</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIName" Type="Str">AudioStreamer.Set Signal.vi</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoConNum" Type="Int">15</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoDir" Type="Int">7</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoName" Type="Str">error__32out</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfo[5]VIProtoOutputIdx" Type="Int">15</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfoVIDocumentation" Type="Str"></Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
+				<Property Name="Source[19].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">6</Property>
+				<Property Name="Source[19].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Set Signal.vi</Property>
+				<Property Name="Source[19].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[19].type" Type="Str">ExportedAssemblyVI</Property>
 				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[2].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
 				<Property Name="Source[2].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
@@ -381,6 +449,40 @@
 				<Property Name="Source[2].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Set Config.vi</Property>
 				<Property Name="Source[2].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[2].type" Type="Str">ExportedAssemblyVI</Property>
+				<Property Name="Source[20].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDir" Type="Int">1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoName" Type="Str">returnvalue</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[0]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoConNum" Type="Int">7</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDataType" Type="Str">Bool</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDir" Type="Int">0</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">7</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">trainer</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoConNum" Type="Int">11</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDir" Type="Int">6</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoIutputIdx" Type="Int">11</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoName" Type="Str">error__32in__32__40no__32error__41</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[2]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]MethodName" Type="Str">TrainTest</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIName" Type="Str">AudioStreamer.TrainTest.vi</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoConNum" Type="Int">15</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDir" Type="Int">7</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoName" Type="Str">error__32out</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfo[3]VIProtoOutputIdx" Type="Int">15</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfoVIDocumentation" Type="Str"></Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
+				<Property Name="Source[20].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">4</Property>
+				<Property Name="Source[20].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.TrainTest.vi</Property>
+				<Property Name="Source[20].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[20].type" Type="Str">ExportedAssemblyVI</Property>
 				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
@@ -394,17 +496,17 @@
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">0</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">destination</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">-1</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoConNum" Type="Int">5</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDataType" Type="Str">String</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoConNum" Type="Int">7</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDataType" Type="Str">Array</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDir" Type="Int">0</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoIutputIdx" Type="Int">5</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoName" Type="Str">name</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoIutputIdx" Type="Int">7</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoName" Type="Str">data</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[2]VIProtoOutputIdx" Type="Int">-1</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoConNum" Type="Int">7</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDataType" Type="Str">Array</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDir" Type="Int">0</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoIutputIdx" Type="Int">7</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoName" Type="Str">data</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoConNum" Type="Int">5</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDataType" Type="Str">String</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDir" Type="Int">3</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoName" Type="Str">name</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[3]VIProtoOutputIdx" Type="Int">-1</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[4]VIProtoConNum" Type="Int">11</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[4]VIProtoDataType" Type="Str">Cluster</Property>
@@ -412,8 +514,8 @@
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[4]VIProtoIutputIdx" Type="Int">11</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[4]VIProtoName" Type="Str">error__32in__32__40no__32error__41</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[4]VIProtoOutputIdx" Type="Int">-1</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]MethodName" Type="Str">SetSignal</Property>
-				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]VIName" Type="Str">AudioStreamer.Set Signal.vi</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]MethodName" Type="Str">SetTrainer</Property>
+				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]VIName" Type="Str">AudioStreamer.Set Trainer.vi</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]VIProtoConNum" Type="Int">15</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]VIProtoDataType" Type="Str">Cluster</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[5]VIProtoDir" Type="Int">7</Property>
@@ -424,7 +526,7 @@
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">6</Property>
-				<Property Name="Source[3].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Set Signal.vi</Property>
+				<Property Name="Source[3].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Set Trainer.vi</Property>
 				<Property Name="Source[3].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[3].type" Type="Str">ExportedAssemblyVI</Property>
 				<Property Name="Source[4].destinationIndex" Type="Int">0</Property>
@@ -571,7 +673,7 @@
 				<Property Name="Source[9].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Trigger.vi</Property>
 				<Property Name="Source[9].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[9].type" Type="Str">ExportedAssemblyVI</Property>
-				<Property Name="SourceCount" Type="Int">18</Property>
+				<Property Name="SourceCount" Type="Int">21</Property>
 				<Property Name="TgtF_companyName" Type="Str">Mass General Brigham</Property>
 				<Property Name="TgtF_fileDescription" Type="Str">OPP.AudioStreamer</Property>
 				<Property Name="TgtF_internalName" Type="Str">OPP.AudioStreamer</Property>
