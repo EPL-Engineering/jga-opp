@@ -31,6 +31,7 @@ classdef VLC < matlab.mixin.SetGet
     requestURL
     password = 'QvGkByH97AOxRvhP';
     playStarted = false;
+    playPosition = -1;
   end
   
   methods
@@ -91,9 +92,12 @@ classdef VLC < matlab.mixin.SetGet
     % starting over
     function playSpecial(this)
        this.play();
-       if ~this.playStarted
-          this.seek(10);
+       if this.playStarted
+          this.seek(this.playPosition);
+       else
+          this.seek(0);
           this.playStarted = true;
+          this.playPosition = 0;
        end
     end
 
@@ -104,6 +108,10 @@ classdef VLC < matlab.mixin.SetGet
     
     % stop playback
     function stop(this)
+      r = this.getStatus();
+      if isfield(r, 'current')
+         this.playPosition = r.current.Position / 1e6;
+      end
       this.request('c=stop');
     end
     
@@ -118,7 +126,7 @@ classdef VLC < matlab.mixin.SetGet
     end
     
     % seek to position (in seconds)
-    function seek(this,position)
+    function seek(this, position)
       this.request(sprintf('c=seek&v=%.0f',position));
     end
     
