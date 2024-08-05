@@ -1,7 +1,7 @@
 function success = motu_set_laterality_monitor8(baseURL, ear)
 
-baseURL = ['http:/' baseURL '/datastore/'];
-% if nargin < 2, baseURL = "http://169.254.221.196/datastore/"; end
+baseURL = ['http://' baseURL '/datastore/'];
+% baseURL = "http://169.254.221.196/datastore/";
 
 success = true;
 
