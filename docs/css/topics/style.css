@@ -247,12 +247,17 @@ a.hs2:hover {
   font-size: 8pt;
 }
 .ps8 {
-  padding-top: 2px;
+  padding-left: 0.5in;
+  text-indent: -0.251968503937008in;
   font-size: 11pt;
 }
 .ps9 {
-  padding-left: 28.35pt;
-  text-indent: -14.15pt;
+  padding-top: 2px;
+  font-size: 11pt;
+}
+.ps10 {
+  padding-left: 0.39in;
+  text-indent: -0.2in;
   font-size: 11pt;
 }
 .hline0 {
