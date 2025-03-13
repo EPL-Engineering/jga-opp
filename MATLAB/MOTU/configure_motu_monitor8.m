@@ -1,4 +1,7 @@
-baseURL = "http://169.254.221.196/datastore/";
+% EarLAB:
+% baseURL = "http://169.254.221.196/datastore/";
+% Children's:
+baseURL = "http://169.254.158.50/datastore/";
 
 % Name USB inputs
 webwrite(baseURL + "ext/ibank/3/ch/0/name", 'json={"value":"Video 1"}');
