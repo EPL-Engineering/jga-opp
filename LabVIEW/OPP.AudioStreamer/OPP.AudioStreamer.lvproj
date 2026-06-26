@@ -31,7 +31,6 @@
 				<Item Name="Find Tag.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Find Tag.vi"/>
 				<Item Name="Format Message String.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Format Message String.vi"/>
 				<Item Name="G-Audio.lvlib" Type="Library" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/G-Audio.lvlib"/>
-				<Item Name="g_audio_32.dll" Type="Document" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/lib/g_audio_32.dll"/>
 				<Item Name="g_audio_64.dll" Type="Document" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/lib/g_audio_64.dll"/>
 				<Item Name="General Error Handler Core CORE.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/General Error Handler Core CORE.vi"/>
 				<Item Name="General Error Handler.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/General Error Handler.vi"/>
@@ -51,6 +50,7 @@
 				<Item Name="Search and Replace Pattern.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Search and Replace Pattern.vi"/>
 				<Item Name="Set Bold Text.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set Bold Text.vi"/>
 				<Item Name="Set String Value.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Set String Value.vi"/>
+				<Item Name="Simple Error Handler.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Simple Error Handler.vi"/>
 				<Item Name="TagReturnType.ctl" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/TagReturnType.ctl"/>
 				<Item Name="Three Button Dialog CORE.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog CORE.vi"/>
 				<Item Name="Three Button Dialog.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Three Button Dialog.vi"/>
@@ -104,7 +104,7 @@
 				<Property Name="DotNETAssembly_signAssembly" Type="Bool">false</Property>
 				<Property Name="DotNETAssembly_StrongNameKeyFileItemID" Type="Ref"></Property>
 				<Property Name="DotNETAssembly_StrongNameKeyGUID" Type="Str">{CB972244-F220-4258-906A-C0761A154BEC}</Property>
-				<Property Name="Source[0].itemID" Type="Str">{BB959BDF-6094-4E2A-9925-0286EA1229A9}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{54B63487-6F76-4703-832D-2C99F1121669}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>
@@ -528,6 +528,28 @@
 				<Property Name="Source[21].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.SendTTS.vi</Property>
 				<Property Name="Source[21].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[21].type" Type="Str">ExportedAssemblyVI</Property>
+				<Property Name="Source[22].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDir" Type="Int">1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoName" Type="Str">returnvalue</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[0]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]MethodName" Type="Str">CloseVI</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIName" Type="Str">AudioStreamer.CloseVI.vi</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoConNum" Type="Int">15</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDir" Type="Int">7</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">error__32out</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">15</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfoVIDocumentation" Type="Str"></Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
+				<Property Name="Source[22].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">2</Property>
+				<Property Name="Source[22].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.CloseVI.vi</Property>
+				<Property Name="Source[22].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[22].type" Type="Str">ExportedAssemblyVI</Property>
 				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
@@ -718,7 +740,7 @@
 				<Property Name="Source[9].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Trigger.vi</Property>
 				<Property Name="Source[9].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[9].type" Type="Str">ExportedAssemblyVI</Property>
-				<Property Name="SourceCount" Type="Int">22</Property>
+				<Property Name="SourceCount" Type="Int">23</Property>
 				<Property Name="TgtF_companyName" Type="Str">Mass General Brigham</Property>
 				<Property Name="TgtF_fileDescription" Type="Str">OPP.AudioStreamer</Property>
 				<Property Name="TgtF_internalName" Type="Str">OPP.AudioStreamer</Property>
@@ -726,6 +748,49 @@
 				<Property Name="TgtF_productName" Type="Str">OPP.AudioStreamer</Property>
 				<Property Name="TgtF_targetfileGUID" Type="Str">{10F4F1C9-C77B-4731-B78A-AE5E56201341}</Property>
 				<Property Name="TgtF_targetfileName" Type="Str">OPP.AudioStreamer.dll</Property>
+				<Property Name="TgtF_versionIndependent" Type="Bool">true</Property>
+			</Item>
+			<Item Name="Query" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{3C0F2D25-56D8-4266-951B-E55AE6CBB4AD}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{8FA5ED32-E6D1-4F2B-8B9D-106C0D259887}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="App_serverType" Type="Int">0</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">true</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{8D2668B2-7378-411D-B675-5554F2F93C34}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">Query</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">true</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../Build</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{A6BCA73B-1EED-4534-B1AE-077268AABD0D}</Property>
+				<Property Name="Bld_version.build" Type="Int">1</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">QueryApplication.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">../Build/QueryApplication.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../Build</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{54B63487-6F76-4703-832D-2C99F1121669}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/LV Source/Test VIs/Query Configure.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">2</Property>
+				<Property Name="TgtF_companyName" Type="Str">Mass Eye &amp; Ear</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">Query</Property>
+				<Property Name="TgtF_internalName" Type="Str">Query</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright © 2026 Mass Eye &amp; Ear</Property>
+				<Property Name="TgtF_productName" Type="Str">Query</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{0D26AEB0-E514-4429-AD46-A960F1322DEC}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">QueryApplication.exe</Property>
 				<Property Name="TgtF_versionIndependent" Type="Bool">true</Property>
 			</Item>
 		</Item>
