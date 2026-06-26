@@ -51,7 +51,7 @@
 				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
 				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
 				<Property Name="Bld_previewCacheID" Type="Str">{976254DA-0CF7-439F-80D3-98B2FB702728}</Property>
-				<Property Name="Bld_version.build" Type="Int">28</Property>
+				<Property Name="Bld_version.build" Type="Int">30</Property>
 				<Property Name="Bld_version.major" Type="Int">1</Property>
 				<Property Name="Destination[0].destName" Type="Str">OPP.Mixer.dll</Property>
 				<Property Name="Destination[0].path" Type="Path">../Build/NI_AB_PROJECTNAME.dll</Property>
@@ -69,7 +69,7 @@
 				<Property Name="DotNETAssembly_signAssembly" Type="Bool">false</Property>
 				<Property Name="DotNETAssembly_StrongNameKeyFileItemID" Type="Ref"></Property>
 				<Property Name="DotNETAssembly_StrongNameKeyGUID" Type="Str">{3DC61CDE-18D5-4B50-B408-B78A4117BD13}</Property>
-				<Property Name="Source[0].itemID" Type="Str">{F1A2650B-D5EB-4B47-84DE-51B5FD2DCC8F}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{C55B5305-0E31-4F19-B18C-A423533C630C}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>

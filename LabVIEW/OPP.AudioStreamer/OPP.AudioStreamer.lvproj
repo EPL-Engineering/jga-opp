@@ -31,6 +31,7 @@
 				<Item Name="Find Tag.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Find Tag.vi"/>
 				<Item Name="Format Message String.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/Format Message String.vi"/>
 				<Item Name="G-Audio.lvlib" Type="Library" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/G-Audio.lvlib"/>
+				<Item Name="g_audio_32.dll" Type="Document" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/lib/g_audio_32.dll"/>
 				<Item Name="g_audio_64.dll" Type="Document" URL="/&lt;vilib&gt;/Dataflow_G/G-Audio/lib/g_audio_64.dll"/>
 				<Item Name="General Error Handler Core CORE.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/General Error Handler Core CORE.vi"/>
 				<Item Name="General Error Handler.vi" Type="VI" URL="/&lt;vilib&gt;/Utility/error.llb/General Error Handler.vi"/>
@@ -64,6 +65,8 @@
 			<Item Name="NoiseGenerator.Params.ctl" Type="VI" URL="../LV Source/Typedefs/NoiseGenerator.Params.ctl"/>
 			<Item Name="PipeLogic.lvclass" Type="LVClass" URL="/&lt;resource&gt;/ChannelSupport/_ChannelSupport/PipeLogic/PipeLogic.lvclass"/>
 			<Item Name="ProbeFormatting.vi" Type="VI" URL="/&lt;resource&gt;/ChannelSupport/_ChannelSupport/ProbeSupport/ProbeFormatting.vi"/>
+			<Item Name="Set Window Height.vi" Type="VI" URL="../../../../../epl-vi-lib/Utility VIs/Windows VIs/Set Window Height.vi"/>
+			<Item Name="Set Window Width.vi" Type="VI" URL="../../../../../epl-vi-lib/Utility VIs/Windows VIs/Set Window Width.vi"/>
 			<Item Name="Stream-a[.](wfm(sgl)).lvlib" Type="Library" URL="/&lt;extravilib&gt;/ChannelInstances/Stream-a[.](wfm(sgl)).lvlib"/>
 			<Item Name="Update Probe Details String.vi" Type="VI" URL="/&lt;resource&gt;/ChannelSupport/_ChannelSupport/ProbeSupport/Update Probe Details String.vi"/>
 		</Item>
@@ -84,7 +87,7 @@
 				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
 				<Property Name="Bld_previewCacheID" Type="Str">{7EDFCD55-DED4-4F23-BD28-439D76D63821}</Property>
 				<Property Name="Bld_version.major" Type="Int">1</Property>
-				<Property Name="Bld_version.minor" Type="Int">1</Property>
+				<Property Name="Bld_version.minor" Type="Int">2</Property>
 				<Property Name="Destination[0].destName" Type="Str">OPP.AudioStreamer.dll</Property>
 				<Property Name="Destination[0].path" Type="Path">../Build/NI_AB_PROJECTNAME.dll</Property>
 				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
@@ -101,7 +104,7 @@
 				<Property Name="DotNETAssembly_signAssembly" Type="Bool">false</Property>
 				<Property Name="DotNETAssembly_StrongNameKeyFileItemID" Type="Ref"></Property>
 				<Property Name="DotNETAssembly_StrongNameKeyGUID" Type="Str">{CB972244-F220-4258-906A-C0761A154BEC}</Property>
-				<Property Name="Source[0].itemID" Type="Str">{CEE2A8F6-028F-498C-AD76-64F6A4E73E4F}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{BB959BDF-6094-4E2A-9925-0286EA1229A9}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>
@@ -491,6 +494,40 @@
 				<Property Name="Source[20].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.TrainTest.vi</Property>
 				<Property Name="Source[20].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[20].type" Type="Str">ExportedAssemblyVI</Property>
+				<Property Name="Source[21].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDir" Type="Int">1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoName" Type="Str">returnvalue</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[0]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoConNum" Type="Int">7</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDataType" Type="Str">Array</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoDir" Type="Int">0</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoIutputIdx" Type="Int">7</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoName" Type="Str">data</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[1]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoConNum" Type="Int">11</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoDir" Type="Int">6</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoIutputIdx" Type="Int">11</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoName" Type="Str">error__32in__32__40no__32error__41</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[2]VIProtoOutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]MethodName" Type="Str">SendTTS</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIName" Type="Str">AudioStreamer.SendTTS.vi</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoConNum" Type="Int">15</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDataType" Type="Str">Cluster</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoDir" Type="Int">7</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoIutputIdx" Type="Int">-1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoName" Type="Str">error__32out</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfo[3]VIProtoOutputIdx" Type="Int">15</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfoVIDocumentation" Type="Str"></Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfoVIDocumentationEnabled" Type="Int">0</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfoVIIsNamesSanitized" Type="Int">1</Property>
+				<Property Name="Source[21].ExportedAssemblyVI.VIProtoInfoVIProtoItemCount" Type="Int">4</Property>
+				<Property Name="Source[21].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.SendTTS.vi</Property>
+				<Property Name="Source[21].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[21].type" Type="Str">ExportedAssemblyVI</Property>
 				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">-1</Property>
 				<Property Name="Source[3].ExportedAssemblyVI.VIProtoInfo[0]VIProtoDataType" Type="Str">void</Property>
@@ -681,7 +718,7 @@
 				<Property Name="Source[9].itemID" Type="Ref">/My Computer/LV Source/Exported VIs/AudioStreamer.Trigger.vi</Property>
 				<Property Name="Source[9].sourceInclusion" Type="Str">TopLevel</Property>
 				<Property Name="Source[9].type" Type="Str">ExportedAssemblyVI</Property>
-				<Property Name="SourceCount" Type="Int">21</Property>
+				<Property Name="SourceCount" Type="Int">22</Property>
 				<Property Name="TgtF_companyName" Type="Str">Mass General Brigham</Property>
 				<Property Name="TgtF_fileDescription" Type="Str">OPP.AudioStreamer</Property>
 				<Property Name="TgtF_internalName" Type="Str">OPP.AudioStreamer</Property>
