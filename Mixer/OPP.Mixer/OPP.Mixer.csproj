@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <Platforms>x64</Platforms>
+  </PropertyGroup>
+
+	<PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
+	  <UseWindowsForms>true</UseWindowsForms>
+    </PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="KLib.Controls" Version="1.7.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="System.Net.Http" />
+	</ItemGroup>
+
+</Project>
