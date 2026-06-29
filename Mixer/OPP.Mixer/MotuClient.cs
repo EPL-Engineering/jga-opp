@@ -20,7 +20,10 @@ public sealed class MotuClient : IDisposable
     private static HttpClient MakeClient(string baseUrl)
     {
         var handler = new HttpClientHandler { UseProxy = false };   // never proxy a local instrument
-        return new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
+        var client = new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
+        client.DefaultRequestHeaders.ExpectContinue = false;   // don't negotiate 100-continue
+        client.DefaultRequestHeaders.ConnectionClose = true;   // Connection: close, no reuse
+        return client;
     }
 
     public Task<HttpResponseMessage> GetAsync(string path, CancellationToken cancellationToken)
@@ -50,22 +53,27 @@ public sealed class MotuClient : IDisposable
         }
     }
 
-    public async Task WriteAsync(string path, double value)
+    private async Task PostValueAsync(string path, string jsonField)
     {
-        string jsonField = JsonConvert.SerializeObject(new { value });   // {"value":0.5}
         var form = new Dictionary<string, string> { { "json", jsonField } };
-        using (var content = new FormUrlEncodedContent(form))            // sets x-www-form-urlencoded
+        using (var content = new FormUrlEncodedContent(form))
         using (var resp = await _http.PostAsync(path, content).ConfigureAwait(false))
-        {
             resp.EnsureSuccessStatusCode();
-        }
     }
 
+    public Task WriteAsync(string path, double value)
+        => PostValueAsync(path, JsonConvert.SerializeObject(new { value }));   // {"value":0.5}
+
+    public Task WriteAsync(string path, int value)
+        => PostValueAsync(path, JsonConvert.SerializeObject(new { value }));   // {"value":0}
+
+    public void Write(string path, double value) => WriteAsync(path, value).GetAwaiter().GetResult();
+    public void Write(string path, int value) => WriteAsync(path, value).GetAwaiter().GetResult();
     // ---- synchronous entry points for MATLAB (can't await a Task) ----
     public T Get<T>(string path) => GetAsync<T>(path).GetAwaiter().GetResult();
 
-    public void Write(string path, double value)        // MATLAB-facing sync wrapper
-        => WriteAsync(path, value).GetAwaiter().GetResult();
+    //public void Write(string path, double value)        // MATLAB-facing sync wrapper
+    //    => WriteAsync(path, value).GetAwaiter().GetResult();
 
 
     public void Dispose() { _http?.Dispose(); }   // "close" — at teardown, not per call

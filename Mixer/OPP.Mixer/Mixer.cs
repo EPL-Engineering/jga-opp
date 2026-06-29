@@ -33,14 +33,14 @@ namespace OPP.Mixer
         {
             if (_mixerPanel != null)
             {
+                foreach (var strip in _mixerPanel.ChannelStrips)
+                {
+                    strip.LevelChanged -= HandleLevelChanged;
+                    strip.MuteToggled -= HandleMuteChanged;
+                }
+
                 _mixerPanel.Close();
                 _mixerPanel = null;
-            }
-
-            foreach (var strip in _mixerPanel.ChannelStrips)
-            {
-                strip.LevelChanged -= HandleLevelChanged;
-                strip.MuteToggled -= HandleMuteChanged;
             }
 
             _motu?.Dispose();
@@ -68,17 +68,28 @@ namespace OPP.Mixer
                 return false;
             }
 
+            string waypoint = "";
             try
             {
+                waypoint = "SetParticipantLevelToZero";
                 SetParticipantLevelToZero();
+                waypoint = "MuteTalkback";
                 MuteTalkback();
+                waypoint = "ReadMotuState";
                 ReadMotuState();
+                waypoint = "ActivateStrips";
                 ActivateStrips();
+                waypoint = "MuteAudioStream";
                 MuteAudioStream(true);
+                waypoint = "";
             }
             catch (Exception ex)
             {
-                _lastErrorMessage = $"MOTU initialization error: {ex.Message}";
+                _lastErrorMessage = $"MOTU initialization error ({waypoint}): {ex.Message}";
+                if (ex.InnerException != null)
+                {
+                    _lastErrorMessage += $"{Environment.NewLine}Inner exception: {ex.InnerException.Message}";
+                }
                 return false;
             }
 
@@ -213,7 +224,7 @@ namespace OPP.Mixer
 
         private void WriteMuteValue(int channelIndex, bool muted)
         {
-            _motu.Write($"datastore/mix/chan/{channelIndex}/matrix/mute", muted ? 1.0 : 0.0);
+            _motu.Write($"datastore/mix/chan/{channelIndex}/matrix/mute", muted ? (int)1 : (int)0);
         }
     }
 }
