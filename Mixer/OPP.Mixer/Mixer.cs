@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Net.Http;
@@ -19,6 +20,12 @@ namespace OPP.Mixer
         {
             _mixerPanel = new MixerPanel();
             _mixerPanel.Show();
+
+            foreach (var strip in _mixerPanel.ChannelStrips)
+            {
+                strip.LevelChanged += HandleLevelChanged;
+                strip.MuteToggled += HandleMuteChanged;
+            }
         }
 
         public void Close()
@@ -27,6 +34,12 @@ namespace OPP.Mixer
             {
                 _mixerPanel.Close();
                 _mixerPanel = null;
+            }
+
+            foreach (var strip in _mixerPanel.ChannelStrips)
+            {
+                strip.LevelChanged -= HandleLevelChanged;
+                strip.MuteToggled -= HandleMuteChanged;
             }
 
             _motu?.Dispose();
@@ -52,31 +65,48 @@ namespace OPP.Mixer
                 return false;
             }
 
+            SetParticipantLevelToZero();
+            MuteTalkback();
             ReadMotuState();
+            ActivateStrips();
+            MuteAudioStream(true);
+
             return true;
         }
 
         public void MuteAudioStream(bool mute)
         {
-            // Implement logic to mute or unmute the audio stream
-            // This could involve interacting with the audio engine or API
-        }
-
-        public void SetChannelProperty(string channelId, string propertyName, object value)
-        {
-            // Implement logic to set a property of a specific channel
-            // This could involve finding the channel by its ID and updating the property
+            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus");
+            foreach (var strip in stimStrips)
+            {
+                strip.MuteAndDisable(mute);
+            }
         }
 
         public void ConnectMonitor(int signal)
         {
-
+            //_motu.Write($"datastore/ext/obank/7/ch/0/src", $"16:{signal}");
         }
 
         public void ToggleTalkback()
         {
-            // Implement logic to toggle the talkback feature
-            // This could involve changing the state of a talkback button or sending a command to the audio engine
+            int talkbackIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "WaverTalkback");
+            if (talkbackIndex >= 0)
+            {
+                var muteValue = ReadMuteValue(talkbackIndex);
+                WriteMuteValue(talkbackIndex, !muteValue);
+                _mixerPanel.ChannelStrips[talkbackIndex].SetMuteSilently(!muteValue);
+            }
+        }
+
+        private void MuteTalkback()
+        {
+            int talkbackIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "WaverTalkback");
+            if (talkbackIndex >= 0)
+            {
+                WriteMuteValue(talkbackIndex, true);
+                _mixerPanel.ChannelStrips[talkbackIndex].SetMuteSilently(true);
+            }
         }
 
         private bool TestConnection(int timeoutMs = 3000)
@@ -100,16 +130,77 @@ namespace OPP.Mixer
             }
         }
 
+        private void ActivateStrips()
+        {
+            foreach (var item in _mixerPanel.ChannelStrips)
+            {
+                if (item.ChannelId != "ParticipantStim")
+                {
+                    item.Activate();
+                }
+            }
+        }
+
+        private void SetParticipantLevelToZero()
+        {
+            int participantStimIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "ParticipantStim");
+            if (participantStimIndex >= 0)
+            {
+                WriteFaderValue(participantStimIndex, 0);
+            }
+        }
+
         private void ReadMotuState()
         {
-            var faderValue = ReadFaderValue(0);
-            _mixerPanel.ChannelStrips[0].SetLevelSilently(faderValue);
+            for (int k=0; k < _mixerPanel.ChannelStrips.Count; k++)
+            {
+                var faderValue = ReadFaderValue(k);
+                _mixerPanel.ChannelStrips[k].SetLevelSilently(faderValue);
+
+                var muteValue = ReadMuteValue(k);
+                _mixerPanel.ChannelStrips[k].SetMuteSilently(muteValue);
+            }
+        }
+
+        private void HandleLevelChanged(object sender, ChannelLevelEventArgs e)
+        {
+            int channelIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip == sender);
+            if (channelIndex >= 0)
+            {
+                WriteFaderValue(channelIndex, e.Level);
+            }
+        }
+
+        private void HandleMuteChanged(object sender, ChannelMuteEventArgs e)
+        {
+            int channelIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip == sender);
+            if (channelIndex >= 0)
+            {
+                WriteMuteValue(channelIndex, e.Muted);
+            }
         }
 
         private float ReadFaderValue(int channelIndex)
         {
             DatastoreValue fader = _motu.Get<DatastoreValue>($"datastore/mix/chan/{channelIndex}/matrix/fader");
-            return 20f * (float) Math.Log10(fader.Value);
+            return 20f * (float)Math.Log10(fader.value);
+        }
+
+        private void WriteFaderValue(int channelIndex, float levelDB)
+        {
+            float linearValue = (float)Math.Pow(10, levelDB / 20.0);
+            _motu.Write($"datastore/mix/chan/{channelIndex}/matrix/fader", linearValue);
+        }   
+
+        private bool ReadMuteValue(int channelIndex)
+        {
+            DatastoreValue mute = _motu.Get<DatastoreValue>($"datastore/mix/chan/{channelIndex}/matrix/mute");
+            return mute.value > 0;
+        }
+
+        private void WriteMuteValue(int channelIndex, bool muted)
+        {
+            _motu.Write($"datastore/mix/chan/{channelIndex}/matrix/mute", muted ? 1.0 : 0.0);
         }
     }
 }

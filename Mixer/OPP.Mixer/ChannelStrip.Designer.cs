@@ -43,7 +43,7 @@
             this.trackBar.Name = "trackBar";
             this.trackBar.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.trackBar.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.trackBar.Size = new System.Drawing.Size(45, 200);
+            this.trackBar.Size = new System.Drawing.Size(45, 147);
             this.trackBar.TabIndex = 0;
             this.trackBar.TickFrequency = 5;
             this.trackBar.TickStyle = System.Windows.Forms.TickStyle.Both;
@@ -53,13 +53,14 @@
             // muteButton
             // 
             this.muteButton.Appearance = System.Windows.Forms.Appearance.Button;
-            this.muteButton.Location = new System.Drawing.Point(6, 258);
+            this.muteButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.muteButton.Location = new System.Drawing.Point(6, 204);
             this.muteButton.Name = "muteButton";
             this.muteButton.Size = new System.Drawing.Size(74, 24);
             this.muteButton.TabIndex = 2;
             this.muteButton.Text = "Mute";
             this.muteButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.muteButton.UseVisualStyleBackColor = true;
+            this.muteButton.UseVisualStyleBackColor = false;
             this.muteButton.CheckedChanged += new System.EventHandler(this.muteButton_CheckedChanged);
             // 
             // label
@@ -80,7 +81,7 @@
             this.numericBox.FloatValue = -3F;
             this.numericBox.IntValue = -3;
             this.numericBox.IsInteger = false;
-            this.numericBox.Location = new System.Drawing.Point(6, 235);
+            this.numericBox.Location = new System.Drawing.Point(6, 181);
             this.numericBox.MaxCoerce = true;
             this.numericBox.MaximumSize = new System.Drawing.Size(20000, 20);
             this.numericBox.MaxValue = 0D;
@@ -105,7 +106,7 @@
             this.Controls.Add(this.muteButton);
             this.Controls.Add(this.trackBar);
             this.Name = "ChannelStrip";
-            this.Size = new System.Drawing.Size(83, 292);
+            this.Size = new System.Drawing.Size(83, 232);
             ((System.ComponentModel.ISupportInitialize)(this.trackBar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -48,12 +49,12 @@ public sealed class MotuClient : IDisposable
         }
     }
 
-    // write — match the verb/encoding to YOUR MOTU's write contract (see note)
-    public async Task WriteAsync(string path, object value)
+    public async Task WriteAsync(string path, double value)
     {
-        string json = JsonConvert.SerializeObject(value);
-        using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-        using (var resp = await _http.PutAsync(path, content).ConfigureAwait(false))
+        string jsonField = JsonConvert.SerializeObject(new { value });   // {"value":0.5}
+        var form = new Dictionary<string, string> { { "json", jsonField } };
+        using (var content = new FormUrlEncodedContent(form))            // sets x-www-form-urlencoded
+        using (var resp = await _http.PostAsync(path, content).ConfigureAwait(false))
         {
             resp.EnsureSuccessStatusCode();
         }
@@ -61,7 +62,10 @@ public sealed class MotuClient : IDisposable
 
     // ---- synchronous entry points for MATLAB (can't await a Task) ----
     public T Get<T>(string path) => GetAsync<T>(path).GetAwaiter().GetResult();
-    public void Write(string path, object value) => WriteAsync(path, value).GetAwaiter().GetResult();
+
+    public void Write(string path, double value)        // MATLAB-facing sync wrapper
+        => WriteAsync(path, value).GetAwaiter().GetResult();
+
 
     public void Dispose() { _http.Dispose(); }   // "close" — at teardown, not per call
 }

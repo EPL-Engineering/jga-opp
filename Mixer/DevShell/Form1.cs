@@ -17,6 +17,7 @@ namespace DevShell
         private Mixer _mixer;
 
         private FakeMotuHandler _fake;
+        private readonly int _numChannels = 8;
 
         public Form1()
         {
@@ -36,12 +37,26 @@ namespace DevShell
 
         private void initButton_Click(object sender, EventArgs e)
         {
-            _fake = new FakeMotuHandler();
-            _fake.Set("datastore/mix/chan/0/matrix/fader", 0.5);
+            CreateFakeMotuHandler();
             var http = new HttpClient(_fake) { BaseAddress = new Uri("http://localhost/") };
             
 //            string motuUrl = urlBox.Text;
             _mixer.Initialize(http);
+        }
+
+        private void CreateFakeMotuHandler()
+        {
+            _fake = new FakeMotuHandler();
+
+
+            for (int k = 0; k < _numChannels; k++)
+            {
+                float faderValueDB = -k * 3f;
+                float faderValueLinear = (float)Math.Pow(10, faderValueDB / 20.0);
+                _fake.Set($"datastore/mix/chan/{k}/matrix/fader", faderValueLinear);
+                _fake.Set($"datastore/mix/chan/{k}/matrix/mute", 0);
+            }
+
         }
     }
 }

@@ -35,8 +35,10 @@ public sealed class FakeMotuHandler : HttpMessageHandler
         }
         else
         {
-            // a write — parse `body` however YOUR client sends sets, then:
-            // _store[path] = parsedValue;
+            // body is "json=%7B%22value%22%3A0.5%7D"  (or "json={\"value\":0.5}" if you sent it raw)
+            string jsonField = Uri.UnescapeDataString(body.Substring("json=".Length));
+            var dv = JsonConvert.DeserializeObject<DatastoreValue>(jsonField);
+            _store[path] = dv.value;
         }
 
         return Json("{}");

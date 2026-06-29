@@ -17,12 +17,25 @@ namespace OPP.Mixer
         public MixerPanel()
         {
             InitializeComponent();
+            CreateStripList();
             RestoreLastPosition();
         }
 
         private void MixerPanel_FormClosing(object sender, FormClosingEventArgs e)
         {
             Settings.LastPosition = new Rectangle(Location, Size);
+        }
+
+        private void CreateStripList()
+        {
+            ChannelStrips.Clear();
+            ChannelStrips.Add(caregiverStrip);
+            ChannelStrips.Add(waverStimStrip);
+            ChannelStrips.Add(talkbackStrip);
+            ChannelStrips.Add(ttsStrip);
+            ChannelStrips.Add(subjectStimStrip);
+            ChannelStrips.Add(videoStrip);
+            ChannelStrips.Add(testerStrip);
         }
 
         private void RestoreLastPosition()
@@ -57,9 +70,5 @@ namespace OPP.Mixer
             }
         }
 
-        private void MixerPanel_Load(object sender, EventArgs e)
-        {
-            ChannelStrips.Add(caregiverStrip);
-        }
     }
 }
