@@ -15,6 +15,7 @@ namespace OPP.Mixer
         private string _motuUrl;
 
         private MotuClient _motu;
+        private string _lastErrorMessage;
 
         public void Open()
         {
@@ -45,17 +46,19 @@ namespace OPP.Mixer
             _motu?.Dispose();
         }
 
-        public bool Initialize(HttpClient httpClient)
-        {
-            _motu = new MotuClient(httpClient);
-            return DoInitialization();
-        }
+        //public bool Initialize(HttpClient httpClient)
+        //{
+        //    _motu = new MotuClient(httpClient);
+        //    return DoInitialization();
+        //}
 
         public bool Initialize(string motuUrl)
         {
             _motu = new MotuClient(motuUrl);
             return DoInitialization();
         }
+
+        public string LastErrorMessage => _lastErrorMessage;
 
         private bool DoInitialization()
         {
@@ -65,11 +68,19 @@ namespace OPP.Mixer
                 return false;
             }
 
-            SetParticipantLevelToZero();
-            MuteTalkback();
-            ReadMotuState();
-            ActivateStrips();
-            MuteAudioStream(true);
+            try
+            {
+                SetParticipantLevelToZero();
+                MuteTalkback();
+                ReadMotuState();
+                ActivateStrips();
+                MuteAudioStream(true);
+            }
+            catch (Exception ex)
+            {
+                _lastErrorMessage = $"MOTU initialization error: {ex.Message}";
+                return false;
+            }
 
             return true;
         }
@@ -120,12 +131,14 @@ namespace OPP.Mixer
                     return true;                       // box answered: reachable
                 }
             }
-            catch (HttpRequestException)   // connection refused, wrong IP, non-2xx status
+            catch (HttpRequestException ex)   // connection refused, wrong IP, non-2xx status
             {
+                _lastErrorMessage = $"MOTU connection error: {ex.Message}";
                 return false;
             }
             catch (TaskCanceledException)  // timed out — host not answering
             {
+                _lastErrorMessage = "MOTU connection timed out.";
                 return false;
             }
         }

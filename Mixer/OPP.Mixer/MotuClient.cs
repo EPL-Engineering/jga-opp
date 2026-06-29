@@ -19,7 +19,8 @@ public sealed class MotuClient : IDisposable
 
     private static HttpClient MakeClient(string baseUrl)
     {
-        return new HttpClient { BaseAddress = new Uri(baseUrl) };
+        var handler = new HttpClientHandler { UseProxy = false };   // never proxy a local instrument
+        return new HttpClient(handler) { BaseAddress = new Uri(baseUrl) };
     }
 
     public Task<HttpResponseMessage> GetAsync(string path, CancellationToken cancellationToken)
@@ -67,5 +68,5 @@ public sealed class MotuClient : IDisposable
         => WriteAsync(path, value).GetAwaiter().GetResult();
 
 
-    public void Dispose() { _http.Dispose(); }   // "close" — at teardown, not per call
+    public void Dispose() { _http?.Dispose(); }   // "close" — at teardown, not per call
 }
