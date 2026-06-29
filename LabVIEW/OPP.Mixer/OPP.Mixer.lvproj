@@ -43,7 +43,6 @@
 				<Property Name="App_INI_GUID" Type="Str">{A8C22E0B-A264-4420-90A0-AC623251E864}</Property>
 				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
 				<Property Name="App_serverType" Type="Int">0</Property>
-				<Property Name="Bld_autoIncrement" Type="Bool">true</Property>
 				<Property Name="Bld_buildCacheID" Type="Str">{806439BA-CE8C-4F89-8CA4-6D96269DE37C}</Property>
 				<Property Name="Bld_buildSpecName" Type="Str">OPP.Mixer</Property>
 				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
@@ -53,8 +52,8 @@
 				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
 				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
 				<Property Name="Bld_previewCacheID" Type="Str">{976254DA-0CF7-439F-80D3-98B2FB702728}</Property>
-				<Property Name="Bld_version.build" Type="Int">32</Property>
 				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Bld_version.minor" Type="Int">1</Property>
 				<Property Name="Destination[0].destName" Type="Str">OPP.Mixer.dll</Property>
 				<Property Name="Destination[0].path" Type="Path">../Build/NI_AB_PROJECTNAME.dll</Property>
 				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
@@ -71,7 +70,7 @@
 				<Property Name="DotNETAssembly_signAssembly" Type="Bool">false</Property>
 				<Property Name="DotNETAssembly_StrongNameKeyFileItemID" Type="Ref"></Property>
 				<Property Name="DotNETAssembly_StrongNameKeyGUID" Type="Str">{3DC61CDE-18D5-4B50-B408-B78A4117BD13}</Property>
-				<Property Name="Source[0].itemID" Type="Str">{C55B5305-0E31-4F19-B18C-A423533C630C}</Property>
+				<Property Name="Source[0].itemID" Type="Str">{643C9765-9B7C-4488-8D09-D660D181956A}</Property>
 				<Property Name="Source[0].type" Type="Str">Container</Property>
 				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
 				<Property Name="Source[1].ExportedAssemblyVI.VIProtoInfo[0]VIProtoConNum" Type="Int">0</Property>

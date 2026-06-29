@@ -4,3 +4,8 @@
 /LabVIEW/OPP.AudioStreamer/*.aliases
 /LabVIEW/OPP.Mixer/*.aliases
 /MATLAB/OPP/*.mat
+/Mixer/OPP.Mixer/obj
+/Mixer/OPP.Mixer/.vs
+/Mixer/OPP.Mixer/bin
+/Mixer/DevShell/obj
+/Mixer/DevShell/bin

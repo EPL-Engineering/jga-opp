@@ -10,6 +10,7 @@
 	<Property Name="NI.XItem.Name" Type="Str">XControl 1</Property>
 	<Property Name="NI.XItem.SupportsFatalErrorOut" Type="Bool">false</Property>
 	<Item Name="Methods" Type="Folder">
+		<Item Name="Clear.vi" Type="Method VI" URL="../Clear.vi"/>
 		<Item Name="Toggle Mute.vi" Type="Method VI" URL="../Toggle Mute.vi"/>
 	</Item>
 	<Item Name="Properties" Type="Folder">
