@@ -91,7 +91,7 @@
             this.numericBox.Name = "numericBox";
             this.numericBox.Size = new System.Drawing.Size(74, 20);
             this.numericBox.TabIndex = 4;
-            this.numericBox.TextFormat = "K4";
+            this.numericBox.TextFormat = "K1";
             this.numericBox.ToolTip = "";
             this.numericBox.Units = "dB";
             this.numericBox.Value = -3D;

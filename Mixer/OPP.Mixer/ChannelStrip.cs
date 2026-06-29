@@ -13,30 +13,6 @@ namespace OPP.Mixer
 {
     using System;
 
-    public sealed class ChannelLevelEventArgs : EventArgs
-    {
-        public string ChannelId { get; }
-        public float Level { get; }
-
-        public ChannelLevelEventArgs(string channelId, float level)
-        {
-            ChannelId = channelId;
-            Level = level;
-        }
-    }
-
-    public sealed class ChannelMuteEventArgs : EventArgs
-    {
-        public string ChannelId { get; }
-        public bool Muted { get; }
-
-        public ChannelMuteEventArgs(string channelId, bool muted)
-        {
-            ChannelId = channelId;
-            Muted = muted;
-        }
-    }
-
     public partial class ChannelStrip : UserControl
     {
         public string Title { 
@@ -132,3 +108,28 @@ namespace OPP.Mixer
         }
     }
 }
+
+public sealed class ChannelLevelEventArgs : EventArgs
+{
+    public string ChannelId { get; }
+    public float Level { get; }
+
+    public ChannelLevelEventArgs(string channelId, float level)
+    {
+        ChannelId = channelId;
+        Level = level;
+    }
+}
+
+public sealed class ChannelMuteEventArgs : EventArgs
+{
+    public string ChannelId { get; }
+    public bool Muted { get; }
+
+    public ChannelMuteEventArgs(string channelId, bool muted)
+    {
+        ChannelId = channelId;
+        Muted = muted;
+    }
+}
+

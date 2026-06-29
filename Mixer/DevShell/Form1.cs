@@ -28,11 +28,13 @@ namespace DevShell
         {
             _mixer = new Mixer();
             _mixer.Open();
+            openButton.Enabled = false;
         }
 
         private void closeButton_Click(object sender, EventArgs e)
         {
             _mixer.Close();
+            openButton.Enabled = true;
         }
 
         private void initButton_Click(object sender, EventArgs e)
@@ -52,7 +54,7 @@ namespace DevShell
             for (int k = 0; k < _numChannels; k++)
             {
                 float faderValueDB = -k * 3f;
-                float faderValueLinear = (float)Math.Pow(10, faderValueDB / 20.0);
+                float faderValueLinear = (float)Math.Pow(10, faderValueDB / 20.0) - 0.01342f;
                 _fake.Set($"datastore/mix/chan/{k}/matrix/fader", faderValueLinear);
                 _fake.Set($"datastore/mix/chan/{k}/matrix/mute", 0);
             }

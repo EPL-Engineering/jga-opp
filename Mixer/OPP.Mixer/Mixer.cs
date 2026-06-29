@@ -46,11 +46,11 @@ namespace OPP.Mixer
             _motu?.Dispose();
         }
 
-        //public bool Initialize(HttpClient httpClient)
-        //{
-        //    _motu = new MotuClient(httpClient);
-        //    return DoInitialization();
-        //}
+        public bool Initialize(HttpClient httpClient)
+        {
+            _motu = new MotuClient(httpClient);
+            return DoInitialization();
+        }
 
         public bool Initialize(string motuUrl)
         {
