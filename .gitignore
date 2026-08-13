@@ -10,3 +10,10 @@
 /Mixer/DevShell/obj
 /Mixer/DevShell/bin
 /Mixer/OPP.Mixer/packages
+/OppStreamer/src/OppStreamer.Core/obj
+/OppStreamer/src/OppStreamer.Core/bin
+/OppStreamer/src/OppStreamer.Hardware/bin
+/OppStreamer/src/OppStreamer.Hardware/obj
+/OppStreamer/test/OppStreamer.Core.Tests/bin
+/OppStreamer/test/OppStreamer.Core.Tests/obj
+/OppStreamer/.vs

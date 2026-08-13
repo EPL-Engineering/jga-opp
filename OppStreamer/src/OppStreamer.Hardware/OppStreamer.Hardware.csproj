@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    net8.0-windows because NAudio's AsioOut/WasapiCapture wrap Windows-only native audio APIs.
+    This project cannot restore or build in the cloud sandbox this solution was drafted in (no
+    network route to nuget.org there — see README.md) but restores and builds normally on a
+    Windows dev machine with standard internet access, which is the actual target environment.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OppStreamer.Core\OppStreamer.Core.csproj" />
+  </ItemGroup>
+
+</Project>
