@@ -13,13 +13,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OppStreamer.Core.Tests", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OppStreamer.Hardware", "src\OppStreamer.Hardware\OppStreamer.Hardware.csproj", "{5C6EB67E-873F-4360-9DE4-79106D147BA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OppStreamer.DevShell", "test\OppStreamer.DevShell\OppStreamer.DevShell.csproj", "{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{75D2A5B8-E75C-4F6D-98B3-F0552EFACB41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -34,10 +33,21 @@ Global
 		{5C6EB67E-873F-4360-9DE4-79106D147BA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C6EB67E-873F-4360-9DE4-79106D147BA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C6EB67E-873F-4360-9DE4-79106D147BA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{75D2A5B8-E75C-4F6D-98B3-F0552EFACB41} = {792DD0A8-21F8-4D4F-8B8C-2562FB27FD0F}
 		{146371FC-E338-47BC-91C7-82ACB29307B9} = {D27530FF-F229-443E-B5C1-B5D4377954B0}
 		{5C6EB67E-873F-4360-9DE4-79106D147BA9} = {792DD0A8-21F8-4D4F-8B8C-2562FB27FD0F}
+		{131B73C5-FAD8-4628-BFB6-E1A2E1E5DD36} = {D27530FF-F229-443E-B5C1-B5D4377954B0}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {11217F01-B6FC-42A8-B208-131C88CE4741}
 	EndGlobalSection
 EndGlobal

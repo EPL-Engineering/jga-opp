@@ -17,3 +17,5 @@
 /OppStreamer/test/OppStreamer.Core.Tests/bin
 /OppStreamer/test/OppStreamer.Core.Tests/obj
 /OppStreamer/.vs
+/OppStreamer/test/OppStreamer.DevShell/obj
+/OppStreamer/test/OppStreamer.DevShell/bin

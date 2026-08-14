@@ -15,9 +15,12 @@ Stage 1 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_
   atomic multi-participant swaps landing on the same boundary, sample-accurate behavior across
   multiple loop wraps within a single audio callback, and a couple of edge cases (buffer-length
   validation, re-triggering mid-trial) that came up while writing the tests. **All 8 pass.**
-- **`src/OppStreamer.Hardware`** — `MotuOutputEngine` (wraps NAudio's `AsioOut` against the MOTU)
-  and `StreamerWaveProvider` (feeds it from `StreamerEngine`). Real source, not a stub — but see
-  the note below on what "verified" means for this project.
+- **`src/OppStreamer.Hardware`** — `StreamerSampleProvider` (feeds `StreamerEngine`'s output into
+  NAudio as plain float) plus two interchangeable transports behind a common
+  `IStreamerAudioOutput` interface: `AsioStreamerOutput` (the MOTU, in production) and
+  `WasapiStreamerOutput` (any ordinary Windows audio device — see "Development without the MOTU"
+  below). Real source, not a stub — but see the note below on what "verified" means for this
+  project. Confirmed by you: this project builds cleanly on a real machine.
 
 ## What's verified, and what isn't
 
@@ -49,6 +52,27 @@ Swap it for real xUnit whenever convenient; the test bodies don't depend on the 
 `OppStreamer.Hardware` targets `net8.0-windows` and will only actually build on Windows (or at
 least restore/compile against Windows reference assemblies) — that's expected, not a bug.
 
+## Development without the MOTU
+
+`StreamerAudioOutputFactory.Create(AudioBackend.Wasapi, engine)` gets you a working
+`IStreamerAudioOutput` against any ordinary Windows audio device — e.g. your StarTech USB 7.1
+card, which happens to expose 8 discrete channels, matching the streamer's channel count. This is
+a genuine, load-bearing part of the design now, not a hack bolted on for convenience: it only
+works because `StreamerSampleProvider` was already written to know nothing about ASIO or WASAPI —
+it just produces float samples for `StreamerEngine`, and each transport decides how to get those
+onto real hardware.
+
+`StreamerAudioOutputFactory.EnumerateDevices(AudioBackend.Wasapi)` lists active Windows render
+devices by friendly name; `WasapiStreamerOutput.Start(deviceName)` tries exclusive mode (float,
+then 16-bit PCM — consumer devices are picky about exact exclusive-mode formats) before falling
+back to shared mode. If it can't get 8 channels working, the exception message points at Windows
+Sound Control Panel → your device → Configure → 7.1 Surround as the likely fix.
+
+What this validates: the OPP↔streamer API surface, the full latch/continuity state machine
+end-to-end (not just the in-process unit tests), device open/close lifecycle, and basic 8-channel
+routing. What it doesn't validate: actual ASIO driver behavior or real hardware timing — that
+still needs the MOTU, whenever you're at the shop.
+
 ## Known gaps / next stages
 
 Per the design doc's staged build plan — none of this is in Stage 1 yet:
@@ -58,9 +82,9 @@ Per the design doc's staged build plan — none of this is in Stage 1 yet:
 - The MATLAB-facing `ConfigApi` surface (string/double[] calls translating into the enum-based
   calls `StreamerEngine` exposes today)
 - Diagnostics window with the real-time stacked plot
-- The `SendTTS` and mic-related channels in `StreamerWaveProvider` are explicitly stubbed to
-  silence right now (see the comments in that file) — the channel layout is already correct, so
-  wiring them up later shouldn't require reworking anything that's here today.
+- The TTS and mic-related channels in `StreamerSampleProvider` are explicitly stubbed to silence
+  right now (see the comments in that file) — the channel layout is already correct, so wiring
+  them up later shouldn't require reworking anything that's here today.
 
 ## A design decision worth double-checking
 
