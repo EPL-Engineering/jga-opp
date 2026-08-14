@@ -33,4 +33,11 @@ public static class StreamerAudioOutputFactory
             AudioBackend.Wasapi => WasapiStreamerOutput.EnumerateDevices(),
             _ => throw new ArgumentOutOfRangeException(nameof(backend), backend, null),
         };
+
+    /// <summary>
+    /// WASAPI capture device names for the Tester/Booth mic bridges (channels 6/7) — independent
+    /// of which output backend is active (design doc §5.5). A single call site for the same query
+    /// ConfigApi's future EnumerateMicrophones() surface (§5.8) will need.
+    /// </summary>
+    public static IReadOnlyList<string> EnumerateMicDevices() => MicBridge.EnumerateDevices();
 }

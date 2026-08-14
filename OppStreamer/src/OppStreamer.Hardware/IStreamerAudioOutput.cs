@@ -17,8 +17,15 @@ public interface IStreamerAudioOutput : IDisposable
     /// changes that don't touch device identity, closing only on Stop() or an actual device
     /// change. This is the fix for the known G-Audio reinit-on-every-open fragility, and it
     /// applies the same way regardless of which transport is in use.
+    ///
+    /// <paramref name="testerMicDeviceName"/> and <paramref name="boothMicDeviceName"/> are WASAPI
+    /// capture device names for channels 6/7 (see design doc §5.5) — independent USB mics on their
+    /// own clocks, bridged in via a drift-compensated ring buffer regardless of which output
+    /// transport is active. Either (or both) may be omitted, e.g. while developing against the
+    /// output path alone without mic hardware at hand: an omitted mic's channel is simply silent,
+    /// exactly like an unwired channel, rather than the call failing.
     /// </summary>
-    void Start(string deviceName);
+    void Start(string deviceName, string? testerMicDeviceName = null, string? boothMicDeviceName = null);
 
     void Stop();
 }

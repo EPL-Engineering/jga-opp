@@ -3,15 +3,20 @@ using KLib.Signals;
 using ScottPlot;
 
 using OppStreamer.Hardware;
+using OppStreamer.Core;
 
 namespace OppStreamer.DevShell
 {
     public partial class MainForm : Form
     {
-        double[] _trainingStim;
+        float[] _trainingStim;
         double[] _testStim;
 
         float _sampleRate = 48000f;
+        int _loopLen;
+
+        StreamerEngine _engine;
+        IStreamerAudioOutput _audioOutput;
 
         public MainForm()
         {
@@ -23,6 +28,11 @@ namespace OppStreamer.DevShell
         {
             CreateSignals();
             PlotSignals();
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _audioOutput?.Dispose();
         }
 
         private void InitSignalGraph()
@@ -68,7 +78,7 @@ namespace OppStreamer.DevShell
                 Active = true,
                 Name = "Training",
                 Modality = Modality.Audio,
-                Laterality = C462.Shared.Laterality.Left,
+                Laterality = Laterality.Left,
                 Waveform = new Sinusoid() { Frequency_Hz = 1000 },
                 Gate = new Gate()
                 {
@@ -78,19 +88,19 @@ namespace OppStreamer.DevShell
                 },
                 Level = new Level()
                 {
-                    Units = C462.Shared.LevelUnits.dB_attenuation,
+                    Units = LevelUnits.dB_attenuation,
                     Value = "-20"
                 }
             };
 
-            int npts = (int)(_sampleRate * 0.5); // 0.5 seconds of data
+            _loopLen = (int)(_sampleRate * 0.5); // 0.5 seconds of data
 
             signalManager.AddChannel(ch);
-            signalManager.Initialize(_sampleRate, npts, signalContext);
+            signalManager.Initialize(_sampleRate, _loopLen, signalContext);
 
             ch.Create();
-            _trainingStim = new double[npts];
-            for (int i = 0; i < npts; i++)
+            _trainingStim = new float[_loopLen];
+            for (int i = 0; i < _loopLen; i++)
             {
                 _trainingStim[i] = ch.Data[i];
             }
@@ -124,14 +134,31 @@ namespace OppStreamer.DevShell
 
         private void startButton_Click(object sender, EventArgs e)
         {
-            var engine = new OppStreamer.Core.StreamerEngine();
-            var audioOutput = StreamerAudioOutputFactory.Create(AudioBackend.Wasapi, engine);
+            startButton.Enabled = false;
 
+            _engine = new StreamerEngine();
+            _audioOutput = StreamerAudioOutputFactory.Create(AudioBackend.Wasapi, _engine);
+
+            _engine.Reset(_loopLen);
+            _engine.SetNumReps(3);
+
+            _engine.SetSignal(Participant.Caregiver, OperatingMode.Test, _trainingStim);
+            _engine.SetSignal(Participant.Waver, OperatingMode.Test, _trainingStim);
+            _engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, _trainingStim); // Background
+            _engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, _trainingStim); // Background
+
+            _audioOutput.Start("Speakers (USB Sound Device)", "Microphone (HD Pro Webcam C920)");
+            stopButton.Enabled = true;
         }
 
         private void stopButton_Click(object sender, EventArgs e)
         {
+            stopButton.Enabled = false;
 
+            _audioOutput.Stop();
+
+            startButton.Enabled = true;
         }
+
     }
 }

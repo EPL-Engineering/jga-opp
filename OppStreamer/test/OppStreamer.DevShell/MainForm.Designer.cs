@@ -35,16 +35,18 @@
             // 
             // signalGraph
             // 
-            signalGraph.Location = new Point(22, 12);
+            signalGraph.Location = new Point(19, 9);
+            signalGraph.Margin = new Padding(3, 2, 3, 2);
             signalGraph.Name = "signalGraph";
-            signalGraph.Size = new Size(464, 287);
+            signalGraph.Size = new Size(406, 215);
             signalGraph.TabIndex = 0;
             // 
             // startButton
             // 
-            startButton.Location = new Point(51, 320);
+            startButton.Location = new Point(45, 240);
+            startButton.Margin = new Padding(3, 2, 3, 2);
             startButton.Name = "startButton";
-            startButton.Size = new Size(114, 40);
+            startButton.Size = new Size(100, 30);
             startButton.TabIndex = 1;
             startButton.Text = "START";
             startButton.UseVisualStyleBackColor = true;
@@ -53,9 +55,10 @@
             // stopButton
             // 
             stopButton.Enabled = false;
-            stopButton.Location = new Point(180, 320);
+            stopButton.Location = new Point(158, 240);
+            stopButton.Margin = new Padding(3, 2, 3, 2);
             stopButton.Name = "stopButton";
-            stopButton.Size = new Size(114, 40);
+            stopButton.Size = new Size(100, 30);
             stopButton.TabIndex = 2;
             stopButton.Text = "STOP";
             stopButton.UseVisualStyleBackColor = true;
@@ -63,15 +66,17 @@
             // 
             // MainForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(700, 338);
             Controls.Add(stopButton);
             Controls.Add(startButton);
             Controls.Add(signalGraph);
+            Margin = new Padding(3, 2, 3, 2);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "OPP Streamer Dev Shell";
+            FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             ResumeLayout(false);
         }

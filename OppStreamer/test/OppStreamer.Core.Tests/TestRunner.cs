@@ -56,6 +56,12 @@ public static class Check
             throw new Exception($"{message}\n       expected: [{string.Join(", ", expected.ToArray())}]\n       actual:   [{string.Join(", ", actual.ToArray())}]");
     }
 
+    public static void Approximately(double expected, double actual, double tolerance, string message)
+    {
+        if (Math.Abs(expected - actual) > tolerance)
+            throw new Exception($"{message}\n       expected: {expected} (+/- {tolerance})\n       actual:   {actual}");
+    }
+
     public static void Throws<TException>(Action body, string message) where TException : Exception
     {
         try

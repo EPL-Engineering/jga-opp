@@ -16,6 +16,7 @@ public sealed class StreamerEngine
 {
     private readonly StimulusStore _store = new();
     private readonly TrialStateMachine _trial;
+    private readonly TtsPlayer _tts = new();
 
     public StreamerEngine() => _trial = new TrialStateMachine(_store);
 
@@ -67,4 +68,14 @@ public sealed class StreamerEngine
     /// </summary>
     public void RenderFrame(int count, Span<float> caregiverOut, Span<float> waverOut, Span<float> subjectOut)
         => _store.Advance(count, caregiverOut, waverOut, subjectOut, onBoundary: _trial.OnBoundary);
+
+    /// <summary>
+    /// Queues presynthesized TTS audio (channel 5) to play after anything already queued or
+    /// playing. Unlike Caregiver/Waver/Subject this has no loop-boundary latch — see
+    /// <see cref="TtsPlayer"/>'s doc comment for why it's a separate, simpler FIFO.
+    /// </summary>
+    public void SendTts(float[] signal) => _tts.Enqueue(signal);
+
+    /// <summary>Renders the next <paramref name="destination"/>.Length samples of TTS audio (channel 5), silence once the queue runs dry.</summary>
+    public void RenderTts(Span<float> destination) => _tts.Read(destination);
 }

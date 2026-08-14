@@ -25,6 +25,7 @@ public static class StreamerEngineTests
         runner.Test("Multiple loop wraps within one frame are each handled in order (sample-accurate)", MultipleWrapsWithinOneFrame);
         runner.Test("A second Trigger() during an active trial is dropped, not queued", RetriggerDuringActiveTrialIsDropped);
         runner.Test("Writing to a buffer that isn't currently selected doesn't affect playback", InactiveBufferWriteIsSilent);
+        runner.Test("SendTts/RenderTts are wired through to a working TtsPlayer, independent of the loop-boundary latch", SendTtsAndRenderTtsAreWiredThrough);
     }
 
     private static void TriggerAppliesAtBoundaryOnly()
@@ -251,5 +252,38 @@ public static class StreamerEngineTests
 
         engine.RenderFrame(4, c, w, s);
         Check.Equal(Marker(4, 1f), c, "Writing an unselected buffer must not affect current (Test-mode) playback");
+    }
+
+    private static void SendTtsAndRenderTtsAreWiredThrough()
+    {
+        // TtsPlayer itself is covered exhaustively by TtsPlayerTests; this just confirms
+        // StreamerEngine's SendTts/RenderTts genuinely reach a live TtsPlayer instance, and that
+        // TTS playback is untouched by loop-boundary/trial machinery entirely — no Reset(),
+        // Trigger(), or RenderFrame() call is needed for it to work.
+        var engine = new StreamerEngine();
+
+        Span<float> tts = stackalloc float[4];
+        engine.RenderTts(tts);
+        Check.Equal(new float[] { 0f, 0f, 0f, 0f }, tts, "RenderTts should produce silence before anything is ever sent");
+
+        engine.SendTts(new float[] { 1f, 2f, 3f });
+        engine.RenderTts(tts);
+        Check.Equal(new float[] { 1f, 2f, 3f, 0f }, tts, "RenderTts should play back exactly what was sent via SendTts, then pad with silence");
+
+        // Confirm it keeps working interleaved with the loop-boundary-driven Caregiver/Waver/Subject
+        // path, without either side affecting the other.
+        const int loopLen = 4;
+        engine.Reset(loopLen);
+        engine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 1f));
+        engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 2f));
+        engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 3f));
+
+        engine.SendTts(new float[] { 9f, 9f });
+        Span<float> c = stackalloc float[4], w = stackalloc float[4], s = stackalloc float[4];
+        engine.RenderFrame(4, c, w, s);
+        Check.Equal(Marker(4, 1f), c, "RenderFrame's Caregiver output should be unaffected by TTS being queued");
+
+        engine.RenderTts(tts);
+        Check.Equal(new float[] { 9f, 9f, 0f, 0f }, tts, "TTS queued while RenderFrame calls happened should still be there afterward, unaffected by loop boundaries");
     }
 }

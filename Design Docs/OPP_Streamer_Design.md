@@ -195,9 +195,9 @@ The MOTU Monitor 8's analog converters are 24-bit (its internal DSP mixing/monit
 
 ## 7. Build Plan (staged)
 
-1. **Core playback skeleton** — `StimulusStore` + `PendingChangeQueue` + `TrialStateMachine` + `MotuOutputEngine` against real ASIO hardware, driven by synthetic test buffers, no mics/TTS/UI yet. Validates the central claim of the whole redesign: glitch-free boundary-latched swaps, including the new live training-stimulus case.
-2. **Mic capture + drift-compensated bridge** for channels 6–7.
-3. **TTS player** for channel 5.
+1. **Core playback skeleton** — `StimulusStore` + `PendingChangeQueue` + `TrialStateMachine` + `MotuOutputEngine` against real ASIO hardware, driven by synthetic test buffers, no mics/TTS/UI yet. Validates the central claim of the whole redesign: glitch-free boundary-latched swaps, including the new live training-stimulus case. **Done** — built, unit tested, and confirmed against real hardware (a WASAPI proxy device; the actual MOTU/ASIO path is still pending).
+2. **Mic capture + drift-compensated bridge** for channels 6–7. **Done** — `MicBridge` + `DriftCompensatedRingBuffer`, built, unit tested, and confirmed against a real capture device; a real short-read bug in the resampling path (surfaced by your first real-hardware test) has been found and fixed (see README).
+3. **TTS player** for channel 5. **Done** — `TtsPlayer` (Core, zero dependencies) + `StreamerEngine.SendTts`/`RenderTts`, built and unit tested (9 new tests); like the mic bridge it needs no hardware to test exhaustively, but hasn't yet been exercised end-to-end through `StreamerSampleProvider` on real hardware.
 4. **ConfigApi** — full surface, ready for MATLAB-side integration and testing.
 5. **DiagnosticsView** — real-time stacked plot window.
 6. **Validation** — loopback-recorded comparison against the current LabVIEW streamer (continuity at trial start/stop, continuity at training toggle, mic drift over long soak runs), plus a side-by-side field trial before full cutover.
