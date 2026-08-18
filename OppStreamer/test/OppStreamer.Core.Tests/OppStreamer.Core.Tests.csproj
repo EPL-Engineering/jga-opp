@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <!--
+	<!--
     Deliberately not an xUnit/NUnit project: this sandbox has no network access to nuget.org,
     so no external test framework can be restored here. This is a plain console app with a
     ~30-line hand-rolled test runner (see Program.cs) — zero external dependencies, so it builds
@@ -9,16 +9,16 @@
     bodies themselves don't depend on the runner.
   -->
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>latest</LangVersion>
+		<IsPackable>false</IsPackable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\OppStreamer.Core\OppStreamer.Core.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\OppStreamer.Core\OppStreamer.Core.csproj" />
+	</ItemGroup>
 
 </Project>

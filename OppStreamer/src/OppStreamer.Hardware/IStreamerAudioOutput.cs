@@ -3,13 +3,23 @@ namespace OppStreamer.Hardware;
 /// <summary>
 /// A transport that can play the streamer's 8-channel output to some real audio device — ASIO
 /// (the MOTU, in production) or WASAPI (a consumer device, for development/testing when the MOTU
-/// isn't at hand). ConfigApi (a later stage) targets this interface, not either concrete backend,
-/// so which transport is in use is a runtime choice, not a build-time one — see
+/// isn't at hand). ConfigApi targets this interface, not either concrete backend, so which
+/// transport is in use is a runtime choice, not a build-time one — see
 /// <see cref="StreamerAudioOutputFactory"/>.
 /// </summary>
 public interface IStreamerAudioOutput : IDisposable
 {
     bool IsRunning { get; }
+
+    /// <summary>
+    /// The decimated waveform history DiagnosticsView (design doc §5.7) reads from — owned for
+    /// the lifetime of this transport (same rule as <see cref="MicBridge"/>: constructed once,
+    /// reused across Stop()/Start() cycles), fed continuously from the audio thread whenever this
+    /// transport is running. Safe to read at any time, including before the first Start() (it just
+    /// reports empty history per channel until real audio has actually been rendered — see
+    /// WaveformMonitor.GetSnapshot's doc comment).
+    /// </summary>
+    OppStreamer.Core.WaveformMonitor Waveforms { get; }
 
     /// <summary>
     /// Opens the device and begins streaming. Deliberately not tied to Initialize() — see design

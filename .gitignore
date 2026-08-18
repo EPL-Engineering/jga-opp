@@ -19,3 +19,7 @@
 /OppStreamer/.vs
 /OppStreamer/test/OppStreamer.DevShell/obj
 /OppStreamer/test/OppStreamer.DevShell/bin
+/OppStreamer/src/OppStreamer.Diagnostics/obj
+/OppStreamer/src/OppStreamer.Diagnostics/bin
+/OppStreamer/src/OppStreamer.ConfigApi/obj
+/OppStreamer/src/OppStreamer.ConfigApi/bin

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+    net8.0-windows because this references OppStreamer.Hardware (IStreamerAudioOutput,
+    StreamerAudioOutputFactory), which itself needs Windows for NAudio's ASIO/WASAPI wrappers. No
+    direct PackageReference to NAudio here — it comes in transitively through the Hardware project
+    reference. Same sandbox caveat as Hardware: this project cannot restore in the cloud sandbox
+    this solution was drafted in (see README.md) but restores and builds normally on a Windows dev
+    machine with standard internet access.
+  -->
+
+	<PropertyGroup>
+		<TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\OppStreamer.Core\OppStreamer.Core.csproj" />
+		<ProjectReference Include="..\OppStreamer.Hardware\OppStreamer.Hardware.csproj" />
+		<ProjectReference Include="..\OppStreamer.Diagnostics\OppStreamer.Diagnostics.csproj" />
+	</ItemGroup>
+
+</Project>

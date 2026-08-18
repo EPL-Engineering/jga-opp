@@ -66,9 +66,16 @@ public sealed class WasapiStreamerOutput : IStreamerAudioOutput
     private readonly MicBridge _testerMic = new();
     private readonly MicBridge _boothMic = new();
 
+    // 10ms buckets (SampleRate/100) x 500 buckets = 5 seconds of scrolling history for
+    // DiagnosticsView (design doc §5.7) — see WaveformMonitor's own doc comment for the bucketing
+    // scheme. Owned for the lifetime of this transport, same rule as the mic bridges above.
+    private readonly WaveformMonitor _waveforms = new(MonitoredChannel.Names, samplesPerBucket: SampleRate / 100, bucketsPerChannel: 500);
+
     public WasapiStreamerOutput(StreamerEngine engine) => _engine = engine ?? throw new ArgumentNullException(nameof(engine));
 
     public bool IsRunning => _wasapiOut is not null;
+
+    public WaveformMonitor Waveforms => _waveforms;
 
     /// <summary>Tester mic bridge (channel 6) — for diagnostics (UnderrunSampleCount, OverflowSampleCount, CurrentFillLevel).</summary>
     public MicBridge TesterMic => _testerMic;
@@ -105,7 +112,7 @@ public sealed class WasapiStreamerOutput : IStreamerAudioOutput
             ?? throw new ArgumentException($"No active WASAPI render device named '{deviceName}'. " +
                 $"Available: {string.Join(", ", EnumerateDevices())}", nameof(deviceName));
 
-        var sampleProvider = new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic);
+        var sampleProvider = new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic, _waveforms);
         var attemptedFormats = new List<string>();
 
         // WASAPI requires WAVEFORMATEXTENSIBLE for any format with more than 2 channels — a
@@ -127,7 +134,7 @@ public sealed class WasapiStreamerOutput : IStreamerAudioOutput
         // StreamerSampleProvider wrapper) — they're this transport's persistent mic connections,
         // same lifecycle rules as _engine, just wrapped fresh each time.
         IWaveProvider Float32Extensible() => new ExtensibleFormatOverride(
-            new SampleToWaveProvider(new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic)),
+            new SampleToWaveProvider(new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic, _waveforms)),
             new WaveFormatExtensible(SampleRate, 32, ChannelCount));
         var pcm16Exclusive = new ExtensibleFormatOverride(
             new SampleToWaveProvider16(sampleProvider),

@@ -4,6 +4,7 @@ using ScottPlot;
 
 using OppStreamer.Hardware;
 using OppStreamer.Core;
+using OppStreamer.ConfigApi;
 
 namespace OppStreamer.DevShell
 {
@@ -147,7 +148,7 @@ namespace OppStreamer.DevShell
             _engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, _trainingStim); // Background
             _engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, _trainingStim); // Background
 
-            _audioOutput.Start("Speakers (USB Sound Device)", "Microphone (HD Pro Webcam C920)");
+            _audioOutput.Start("Speakers (USB Sound Device)");
             stopButton.Enabled = true;
         }
 
@@ -160,5 +161,17 @@ namespace OppStreamer.DevShell
             startButton.Enabled = true;
         }
 
+        private void speakButton_Click(object sender, EventArgs e)
+        {
+            var voice = new KLib.WindowsVoice.WindowsVoice();
+            var data = voice.Render("Hello, this is a test of the text to speech system.");
+            _engine.SendTts(data);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            ConfigApi.ConfigApi streamer = new ConfigApi.ConfigApi();
+            streamer.Initialize();
+        }
     }
 }

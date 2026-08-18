@@ -1,35 +1,45 @@
-# OppStreamer — Stage 3
+# OppStreamer — Stage 5
 
-Stage 3 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_Design.md`
+Stage 5 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_Design.md`
 (delivered separately) for the full architecture and rationale.
 
 ## What's here
 
 - **`src/OppStreamer.Core`** — the hardware-independent playback logic: `StimulusStore`,
   `PendingChangeQueue`, `TrialStateMachine`, `StreamerEngine` (the composition root),
-  `DriftCompensatedRingBuffer` (the mic bridge's clock-drift correction, see below), and now
-  `TtsPlayer` (channel 5, see "Text-to-speech player" below). No external dependencies at all.
-  `StreamerEngine`'s boundary-latch mechanism remains the central bet of the whole redesign — that
-  Trigger, TrainTest, and the live training-stimulus swap can be handled by one generalized
-  mechanism instead of hand-wired per feature — and it's fully built and tested.
-- **`test/OppStreamer.Core.Tests`** — 25 tests: the original 8 exercising the boundary-latch
-  mechanism (no audible glitch mid-loop, atomic multi-participant swaps, sample-accurate behavior
-  across multiple loop wraps, and a couple of edge cases that came up while writing them), 7 for
-  `DriftCompensatedRingBuffer` — constant-signal fidelity, fill-level convergence under matched
-  and mismatched write/read rates, overflow/underrun bookkeeping, and a direct check that the
-  read-rate correction never exceeds its configured bound — 9 for `TtsPlayer` — silence when
-  empty, exact playback, cross-buffer continuity within a single `Read()`, append-not-interrupt
-  semantics, and `IsPlaying`/`QueuedSampleCount` bookkeeping — plus 1 confirming
-  `StreamerEngine.SendTts`/`RenderTts` genuinely reach a live `TtsPlayer` and stay independent of
-  the loop-boundary latch. **All 25 pass.**
+  `DriftCompensatedRingBuffer` (the mic bridge's clock-drift correction, see below), `TtsPlayer`
+  (channel 5, see "Text-to-speech player" below), and now `WaveformMonitor` (DiagnosticsView's data
+  source, see "DiagnosticsView" below). No external dependencies at all. `StreamerEngine`'s
+  boundary-latch mechanism remains the central bet of the whole redesign — that Trigger, TrainTest,
+  the live training-stimulus swap, and now the click-free `Stop()` (see below) can all be handled
+  by one generalized mechanism instead of hand-wired per feature — and it's fully built and tested.
+- **`test/OppStreamer.Core.Tests`** — 38 tests, all passing: the original 8 exercising the
+  boundary-latch mechanism, 7 for `DriftCompensatedRingBuffer`, 9 for `TtsPlayer` plus 1 confirming
+  `StreamerEngine.SendTts`/`RenderTts` are wired through, 5 for the click-free `Stop()` mechanism
+  (`StopBoundaryTests.cs` — silence never cuts a loop mid-pass, lands on all three participants
+  together exactly at the boundary, the wait signal fires once per request), and 8 for
+  `WaveformMonitor` (`WaveformMonitorTests.cs` — bucket commit timing, multi-bucket-in-one-call,
+  history ramping from 0 up to its cap then wrapping oldest-first, per-channel independence,
+  argument validation).
 - **`src/OppStreamer.Hardware`** — `StreamerSampleProvider` (feeds `StreamerEngine`'s and the mic
-  bridges' output into NAudio as plain float), `MicBridge` (wraps NAudio `WasapiCapture`, one per
-  mic — see "Mic bridge (channels 6/7)" below), and two interchangeable output transports behind a
-  common `IStreamerAudioOutput` interface: `AsioStreamerOutput` (the MOTU, in production) and
+  bridges' output into NAudio as plain float, and now also feeds `WaveformMonitor` — see
+  "DiagnosticsView" below), `MicBridge` (wraps NAudio `WasapiCapture`, one per mic — see "Mic
+  bridge (channels 6/7)" below), and two interchangeable output transports behind a common
+  `IStreamerAudioOutput` interface: `AsioStreamerOutput` (the MOTU, in production) and
   `WasapiStreamerOutput` (any ordinary Windows audio device — see "Development without the MOTU"
   below). Real source, not a stub — but see the note below on what "verified" means for this
   project. Confirmed by you: the Stage 1 slice of this project builds and runs cleanly on a real
   machine, with genuinely verified 8-channel routing.
+- **`src/OppStreamer.ConfigApi`** — `ConfigApi`, the one class MATLAB actually calls via
+  `NET.addAssembly` (see "ConfigApi (MATLAB-facing surface)" below). Thin by design —
+  validates/parses/converts, then delegates straight into `StreamerEngine`, an
+  `IStreamerAudioOutput`, or (new this stage) `OppStreamer.Diagnostics.DiagnosticsHost`.
+- **`src/OppStreamer.Diagnostics`** — new this stage: `DiagnosticsView` (design doc §5.7 — a
+  WinForms window with a running/stopped indicator and a stacked real-time plot, one row per
+  channel, via ScottPlot) and `DiagnosticsHost` (owns its hosting thread/lifecycle — see
+  "DiagnosticsView" below for why it's a separate class). References only `OppStreamer.Core`, not
+  `OppStreamer.Hardware` — it's generic over whatever channels the `WaveformMonitor` it's given
+  reports, no hardcoded channel list.
 
 ## What's verified, and what isn't
 
@@ -63,6 +73,40 @@ a property of the sandbox, not something you'll hit normally). Practical effect:
   been exercised end-to-end through `StreamerSampleProvider` on real hardware (that still needs
   Windows + NAudio), but the wiring itself is simple enough (a `Span<float>` fill, same shape as
   the mic channels) that this is a low-risk gap.
+- **`ConfigApi` (new this stage) can't build in-sandbox either** — same NU1100 restore failure as
+  `OppStreamer.Hardware` (it references that project, which references NAudio). But everything in
+  it that ISN'T literal device I/O — lifecycle guards, device/argument validation, the Start/Stop
+  state machine, participant/mode string parsing, `double[]`→`float[]` conversion, and (this is the
+  part most worth trusting) that every method genuinely routes to the *correct* underlying
+  `StreamerEngine` call, not just "doesn't throw" — **was verified for real**, in-sandbox: the
+  actual, unmodified `ConfigApi.cs` file was compiled into a throwaway project against hand-written
+  fake `IStreamerAudioOutput`/`StreamerAudioOutputFactory` stand-ins (same names/signatures as the
+  real Hardware types, swapped in instead of referencing the real Hardware project), and run through
+  27 scenarios — including reaching into the private `StreamerEngine` field via reflection to
+  confirm things like "does `SetTrainer("Subject", ..., isSubjectProbe: true)` actually land on the
+  Signal buffer, not Background" rather than trusting the one-line delegation by eye. Now 35
+  scenarios as of this stage (see below). What's NOT covered by this: real MATLAB→`NET.addAssembly`
+  marshaling of these exact types (double arrays, nullable strings, etc.) and, obviously, real
+  device I/O — both need your machine.
+- **`OppStreamer.Diagnostics` (new this stage) splits cleanly into a verified half and an
+  unverified half.** `WaveformMonitor` (Core — the actual decimation/history logic DiagnosticsView
+  plots) has zero UI dependency at all, so it's genuinely, fully unit tested (8 tests, see above) —
+  not a placeholder. `DiagnosticsView`/`DiagnosticsHost` themselves (the WinForms window, the
+  ScottPlot calls) could not be built OR verified in this sandbox at all — this needs the
+  `Microsoft.WindowsDesktop.App` reference pack (Windows-only) AND the ScottPlot NuGet package
+  (needs network), neither available here. What COULD be verified without either: `ConfigApi`'s
+  Initialize()/Close() wiring to `DiagnosticsHost` — that it's constructed exactly once per
+  `Initialize()`, disposed exactly once per `Close()`, a construction failure propagates and
+  leaves `IsOpen()` false rather than leaving things half-open, and the `isStreaming`/`waveforms`
+  delegates it's given genuinely stay live (not stale snapshots) as `Start()`/`Stop()` change state
+  — verified the same way as everything else `ConfigApi` does (compiling the real, unmodified
+  `ConfigApi.cs` against a fake `DiagnosticsHost`, alongside the existing fake Hardware stand-ins;
+  8 scenarios, bringing the fake-hardware harness to 35 total, all passing). **Real-machine
+  testing already found and fixed one thing** — the original STA-thread hosting approach never
+  actually worked under MATLAB; see the 2026-08-18 entry in "DiagnosticsView" below for the fix,
+  which turned out to be a simplification (no dedicated thread needed at all), not a workaround.
+  **What's still genuinely unverified:** whether the ScottPlot v5 API calls used are correct for
+  whatever version actually restores (see "DiagnosticsView" below).
 
 ## Building on your machine
 
@@ -76,8 +120,10 @@ The test project isn't xUnit — see the comment in its `.csproj` for why (same 
 constraint). It's a ~30-line hand-rolled runner (`TestRunner.cs`) with plain `Check.*` assertions.
 Swap it for real xUnit whenever convenient; the test bodies don't depend on the runner itself.
 
-`OppStreamer.Hardware` targets `net8.0-windows` and will only actually build on Windows (or at
-least restore/compile against Windows reference assemblies) — that's expected, not a bug.
+`OppStreamer.Hardware`, `OppStreamer.ConfigApi`, and (new this stage) `OppStreamer.Diagnostics` all
+target `net8.0-windows` and will only actually build on Windows (or at least restore/compile
+against Windows reference assemblies) — that's expected, not a bug. `OppStreamer.Diagnostics`
+additionally needs the ScottPlot.WinForms package to restore from nuget.org.
 
 ## Development without the MOTU
 
@@ -189,15 +235,267 @@ means silence on channel 5, no null-checking needed.
 samples of unplayed TTS audio outstanding (current buffer's remainder plus everything queued
 behind it).
 
+## ConfigApi (MATLAB-facing surface)
+
+`ConfigApi` (new project, `OppStreamer.ConfigApi`) is the one class OPP actually calls via
+`NET.addAssembly` — everything built in Stages 1–3 (`StreamerEngine`, `IStreamerAudioOutput`,
+`MicBridge`, `TtsPlayer`) sits behind it. It mirrors the method-name list design doc §5.8 specifies
+as unchanged (`Initialize`, `Close`, `IsOpen`, `EnumerateMicrophones`, `EnumerateOutputDevices`,
+`IsMicDeviceValid`, `IsOutputDeviceValid`, `SetConfig`, `SetNumReps`, `SetSignal`, `SetTrainer`,
+`TrainTest`, `Start`, `Stop`, `Trigger`) plus the two new ones (`SetTrainingStimulusSet`,
+`SendTTS`).
+
+**Please read this before wiring it up to real MATLAB code.** §5.8 gives method *names* to mirror,
+not full signatures — the original LabVIEW-compiled assembly wasn't available to inspect while
+building this (I asked; you confirmed designing from the doc + established conventions was the
+way to go, with you sanity-checking after). Every place I had to invent a parameter list rather
+than carry one over from an already-built, already-tested Core method has an `ASSUMPTION:` comment
+directly on it in `ConfigApi.cs`, plus these are the ones most likely to need adjusting:
+
+- **`SetConfig(outputDeviceName, loopLengthSamples, testerMicDeviceName?, boothMicDeviceName?)`** —
+  §5.8 lists just the name. This is what SetConfig configures in this build: which output device
+  (and optional mic devices) to use, and the current phase's loop length (one masker interval, in
+  samples — everything else already has its own setter). If the real call site passes something
+  shaped differently (a config struct, or separate device-selection vs. phase-length calls), this
+  is the method to reshape.
+- **`SetSignal(participant, mode, signal, isSubjectProbe = false)` and
+  `SetTrainer(participant, signal, isSubjectProbe = false)`** — Core's underlying methods only
+  cover Caregiver/Waver directly; Subject has separate Background/Signal buffers
+  (`StreamerEngine.SetSubjectSignal`). Since §5.8 lists just one `SetSignal` name covering *all*
+  participants including Subject, `isSubjectProbe` selects Signal (true) vs. Background (false) for
+  Subject specifically, and it's an error to pass it non-default for Caregiver/Waver. If the real
+  API instead has separate methods for Subject's two buffers (e.g. `SetBackground`/`SetProbe`),
+  this is the assumption to correct.
+- **`SetTrainingStimulusSet(caregiver, waver, subjectBackground, subjectSignal)`** — takes four
+  positional `double[]` arrays, mirroring the already-built
+  `StreamerEngine.SetTrainingStimulusSet`. Design doc §5.3 originally sketched this as
+  `Dictionary<string, double[]>`; that was superseded once Core was actually built (four positional
+  buffers give compile-time confidence all four always arrive together), and I've updated §5.3's
+  text to match.
+- Participant (`"Caregiver"`/`"Waver"`/`"Subject"`) and mode (`"Test"`/`"Training"`) are passed as
+  strings, case-insensitive, with a clear exception listing valid values on a typo — this felt like
+  the most MATLAB/LabVIEW-natural choice, but if the real assembly used something else (integer
+  codes, actual `.NET` enum references via `NET.addAssembly`), swapping the parsing helpers
+  (`ParseParticipant`/`ParseMode`) is a small, contained change.
+
+**A real thread-safety gap this surfaced, not yet fixed:** design doc §6 says the device connection
+stays open across `SetConfig` calls/phase transitions — implying `SetConfig` can be called again
+while actively streaming. But `StreamerEngine.Reset()` (which a new loop length triggers) mutates
+`StimulusStore`'s active buffers directly, with **no synchronization** against the audio thread's
+concurrent `Advance()` calls — it was written for the "nothing is playing yet" case. Calling it
+while the render callback is live is a genuine data race, not just a rough edge. `SetConfig` in
+this build sidesteps it rather than papering over it: re-calling `SetConfig` with the *same* loop
+length while streaming is fine (skips `Reset()` entirely, since nothing needs resetting), but a
+*different* loop length while streaming throws, telling the caller to `Stop()` first. If OPP
+actually needs to change the loop length mid-session without a `Stop()`/`Start()` blip, that needs
+a real fix to `StimulusStore` (routing `Reset()` through the same boundary-gate as everything else,
+or a lock) — flagging this now rather than guessing at a fix nobody's asked for yet.
+
+Two small additions beyond the mirrored surface, both easy to ignore if not needed:
+`IsStreaming` (true between `Start()`/`Stop()`) and `LastError` (the message of the most recent
+`Start()` failure, for MATLAB-side logging).
+
+**Bug found from your first real MATLAB test (2026-08-16): `SetConfig()` could crash the whole
+MATLAB process instead of throwing a normal, catchable error.** Your crash log's key line —
+`System.Runtime.InteropServices.SEHException (0x80004005): External component has thrown an
+exception`, reaching `AppDomain`'s unhandled-exception path instead of MATLAB's normal .NET-error
+marshaling — is the signature of a native fault, not an ordinary managed exception. That distinction
+matters: an ordinary exception (like the `ArgumentException`s `ConfigApi` throws for bad input)
+always surfaces in MATLAB as a normal, catchable error, exactly like the validation errors this
+project already relies on elsewhere — but a genuine native-level fault bypasses that machinery
+entirely, at a level no `try`/`catch` in `ConfigApi.cs`, or anywhere else in managed code, can
+intercept. (For what it's worth: .NET Core/5+, which this targets, removed the ability to catch
+these — even the old `[HandleProcessCorruptedStateExceptions]` escape hatch .NET Framework had
+doesn't work anymore. If it's truly this class of fault, no code change in this repo can make it
+catchable — only avoiding triggering it, or isolating it in a separate process, actually helps.)
+
+The leading suspect: `ConfigApi.SetConfig()` → its private `ResolveBackend()` → previously checked
+`AsioStreamerOutput.EnumerateDrivers()` (NAudio's `AsioOut.GetDriverNames()`) **first**, before ever
+checking whether the name you passed was a WASAPI device — meaning every `SetConfig()` call,
+regardless of which device it actually named, enumerated every ASIO driver registered on your
+machine. ASIO driver enumeration querying third-party driver code is a well-known source of exactly
+this kind of instability — a single misbehaving or orphaned driver registration (leftover from some
+other audio software, a broken install, etc.) can crash enumeration for everything, not just itself.
+
+Two fixes, shipped now:
+
+1. **`ResolveBackend()` now checks WASAPI first, ASIO second.** A WASAPI device name (the likely
+   case on your current dev machine, away from the MOTU) now never touches ASIO enumeration at all.
+   This does NOT remove the risk for a name that genuinely needs ASIO — if your eventual MOTU
+   machine also has a misbehaving ASIO driver registered, `SetConfig()` with the MOTU's name would
+   still reach, and could still crash on, that same call. Verified in the sandbox harness (now 29
+   scenarios) with a fake that "crashes" on ASIO enumeration: confirmed a WASAPI device name never
+   reaches it, and confirmed a name that genuinely isn't found via WASAPI still does reach (and
+   surface a failure from) the ASIO check — this is "skip when unnecessary," not "silently swallow
+   ASIO problems."
+2. **`AsioStreamerOutput.EnumerateDrivers()` now wraps `GetDriverNames()` in a try/catch**, returning
+   an empty list on failure instead of letting an exception propagate uncontrolled. This only helps
+   for *ordinary* (catchable) exceptions some ASIO drivers throw — real insurance, but not a fix for
+   the corrupted-state-fault scenario above.
+
+**What I'd suggest you do next, whichever is easiest:** the fastest real fix, if this is what
+happened, is usually just checking Windows for a broken/orphaned ASIO driver registration (Control
+Panel / registry `HKLM\SOFTWARE\ASIO`) and removing it — no code change needed, and it protects the
+eventual MOTU machine too, which fix #1 above doesn't. To confirm the diagnosis independent of the
+above fixes, try calling `obj.EnumerateOutputDevices()` directly (right after `Initialize()`,
+before any `SetConfig()` call) — if that alone reproduces the crash, it's a strong confirmation this
+is ASIO enumeration, not something else in `SetConfig()`. If you can share which device name you
+passed to `SetConfig()`, that'll also help confirm (a WASAPI-sounding name, e.g. "Speakers
+(Realtek...)", would make this diagnosis very likely correct; an ASIO/MOTU name would still be
+consistent but less conclusive on its own, since the crash happened before your requested device
+was ever actually checked). If the driver-cleanup route doesn't pan out, isolating ASIO enumeration
+(and device open) into a short-lived child process — the standard mitigation professional DAWs use
+for exactly this class of driver instability — is the real, robust fix; happy to build that next if
+needed.
+
+**Click-free `Stop()` (2026-08-17):** `Stop()` no longer cuts Caregiver/Waver/Subject off
+mid-waveform. It now requests silence at the *next* loop boundary — reusing the exact same
+boundary latch every other stimulus change goes through (`StimulusStore.RequestSilence` →
+`PendingChangeQueue`) — so the loop pass already in progress finishes normally, and playback only
+goes quiet exactly at the wrap, same as a mode switch or a hot-swapped training buffer. The
+physical device (WASAPI/ASIO stream, mic captures) is only torn down once that boundary has
+actually been reached; by then the channel is already silent, so there's nothing left to click on.
+
+`Stop()` still returns immediately — it's a deliberate exception to this class's general
+non-blocking rule, not a violation of it: the *call* doesn't block, but its effect (the actual
+device teardown) now finishes shortly after, on a background thread, rather than synchronously
+before the call returns. `IsStreaming` correctly stays `true` for that brief window — audio really
+is still playing (now silence). If the boundary never arrives (a stalled device, not just a long
+masker interval), a timeout — one full loop length at 48kHz, doubled, floored at 0.5s — falls back
+to the old immediate hard stop, so `Stop()` can never hang forever.
+
+**Known limitation, not yet guarded against:** calling `Start()` again before that background
+teardown finishes is unsafe. `Start()` sees `IsStreaming` still `true` (correctly, per above) and
+no-ops, so the in-flight graceful stop goes on to silence and tear down the device out from under
+that "restart." If OPP ever needs `Stop()` immediately followed by `Start()` (e.g. switching output
+devices quickly), poll `IsStreaming` down to `false` first. `Close()` is unaffected — it
+deliberately stayed the old immediate/hard stop (a "tear everything down now" cleanup path should
+actually finish before returning, not hand off to a background thread), so it's still safe to call
+right after `Stop()` without waiting.
+
+Verified in the Core test suite (`StopBoundaryTests.cs`: silence doesn't cut a loop mid-pass,
+lands on all three participants together at the boundary, the wait signal fires exactly once per
+request) and in the ConfigApi fake-hardware harness (the transport isn't torn down until a real
+boundary is driven through the shared `StreamerEngine`, and does so promptly rather than waiting
+out the timeout fallback).
+
+## DiagnosticsView
+
+Design doc §5.7, build plan item 5: a window, owned by the streamer process, with a running/
+stopped indicator and a stacked real-time plot of the six content channels (Caregiver, Waver,
+Subject, TTS, Tester Mic, Booth Mic — channels 0-1 are reserved/silent, not worth plotting).
+
+**Architecture, in three pieces:**
+
+- **`WaveformMonitor` (Core)** — the actual data source. Per channel, incrementally decimates the
+  incoming sample stream into a scrolling history of (min, max) buckets: 10ms buckets (480 samples
+  at 48kHz) × 500 buckets = 5 seconds of visible history, both constants set where
+  `WasapiStreamerOutput`/`AsioStreamerOutput` construct it (tied to their own `SampleRate`
+  constant, not a disconnected magic number). `StreamerSampleProvider.Read()` feeds it every
+  callback for all six channels — cheap (running min/max, no allocation on that hot path). One
+  deliberate simplification vs. §5.7's literal "double-buffered handoff" wording: this uses a
+  short lock instead, held only once per finished bucket (~every 10ms) and once per UI redraw tick
+  (~every 60-100ms) — never on the per-sample path — the same shape `PendingChangeQueue` already
+  uses elsewhere in Core. See the class's own doc comment for the full reasoning; a real lock-free
+  double buffer would also work but isn't buying anything at these rates. Fully unit tested (8
+  tests, all passing) — this piece needed no hardware or UI to verify for real.
+- **`DiagnosticsView` (Diagnostics, internal)** — the actual WinForms `Form`: a colored dot +
+  label for the running/stopped indicator, a `TableLayoutPanel` of stacked `ScottPlot.WinForms.
+  FormsPlot` controls (one per channel, built lazily once a `WaveformMonitor`'s channel names are
+  known — so this project references only `OppStreamer.Core`, not `OppStreamer.Hardware`, no
+  hardcoded six-channel list), redrawn on a ~15Hz `System.Windows.Forms.Timer`. The
+  ScottPlot-touching part of every redraw is wrapped in a try/catch that permanently disables
+  plotting (with a visible error label) after its first failure, while the indicator keeps
+  updating regardless — see the second 2026-08-18 entry below for why that matters.
+- **`DiagnosticsHost` (Diagnostics, public)** — deliberately the ONLY type this project exposes
+  that `ConfigApi.cs` touches. `ConfigApi.cs` itself never references `System.Windows.Forms` or
+  ScottPlot directly — it just does `new DiagnosticsHost(() => IsStreaming, () =>
+  _output?.Waveforms)` in `Initialize()` and `.Dispose()` in `Close()`. Two reasons for this split:
+  it keeps `ConfigApi.cs` compilable/testable against plain fakes the same way it already is for
+  `OppStreamer.Hardware` (see below), and it isolates the hosting approach into one well-documented
+  class that can change internally without touching `ConfigApi.cs` at all — which is exactly what
+  happened, see the 2026-08-18 entry right below.
+
+**2026-08-18: window didn't appear under MATLAB (DevShell was fine) — root cause found, via your
+own prior art.** The original `DiagnosticsHost` ran `DiagnosticsView` on its own dedicated STA
+thread with its own `Application.Run` message loop, on the theory that MATLAB's calling thread
+might not pump Windows messages for a window it didn't create itself — the textbook-cautious
+choice, but wrong for this environment. Your `OPP.Mixer.Mixer.Open()` was the proof: it does
+exactly `_mixerPanel = new MixerPanel(); _mixerPanel.Show();` — no thread, no `Application.Run` —
+and that panel is fully live and interactive from MATLAB today. That's decisive: MATLAB's own
+calling thread already pumps a message loop adequate for a WinForms window shown directly on it.
+The dedicated-thread version, meanwhile, never worked under MATLAB at all — not even a bare
+`MessageBox.Show()` called from that separate thread ever appeared, while the identical call
+succeeds trivially on MATLAB's own thread. So the extra thread wasn't just unnecessary, it was
+actively the failure: something about a *new* thread this code spun up itself never got serviced
+under MATLAB's hosting, even though creating the thread itself never errored.
+
+**Fixed:** `DiagnosticsHost` now does exactly what `MixerPanel` does — constructs `DiagnosticsView`
+and calls `.Show()` directly on whichever thread calls it, no separate thread, no
+`Application.Run`, no `Invoke` marshaling needed (everything happens on the one thread). `Dispose()`
+is just `_view.Close()`, same thread. This is a substantial simplification, not just a fix — the
+whole `ManualResetEventSlim`/thread-join/exception-relay machinery from the two earlier iterations
+is gone, because it was solving a problem (MATLAB not pumping messages for a window it didn't
+create) that, per `Mixer`, doesn't actually exist here. `ConfigApi.cs` itself needed zero changes
+for this — exactly the point of keeping `DiagnosticsHost` as the one thing it touches.
+
+**2026-08-18 (later same day): window + indicator confirmed working, but plotting throws —
+`'ScottPlot.Fonts' threw an exception`, repeatedly.** With the threading fix above in place, the
+window now shows and the streaming indicator lights up correctly under MATLAB. But the first redraw
+tick that touches ScottPlot throws a `TypeInitializationException` from `ScottPlot.Fonts`'s static
+constructor — and it kept recurring on every tick "until MATLAB is closed." That repeat is expected
+.NET behavior, not a new bug: once a type's static constructor throws, the CLR caches the failure
+and rethrows the *same* exception on every later access to that type, for the lifetime of the
+process — so at a 15Hz redraw timer, `DiagnosticsView` was re-throwing roughly 15 times a second
+until the MATLAB process itself was closed.
+
+**Fixed — "fail once and give up," exactly as asked:** `Redraw()` now wraps the entire
+ScottPlot-touching block (`EnsurePlotsBuiltFor`, including its first `FormsPlot` construction where
+a `Fonts` static-init failure actually surfaces, plus the per-channel `Scatter`/axis/`Refresh`
+calls) in one `try`/`catch`. The first exception trips a `_plottingDisabled` flag and calls the new
+`DisablePlotting(ex)`, which permanently skips all ScottPlot code from then on, replaces the plots
+panel with a visible error label (the flattened exception chain — outer `TypeInitializationException`
+plus every `InnerException` down the chain, since the outer message alone doesn't say why), and
+leaves it there for the rest of the session. `SetStreamingIndicator` has no ScottPlot dependency and
+is called before the try block on every tick regardless, so the running/stopped dot keeps working
+even with plotting disabled.
+
+**Still open — the actual root cause of the `ScottPlot.Fonts` failure itself.** The one-shot guard
+above stops the symptom (infinite re-throw) but doesn't fix why the static initializer fails in the
+first place; once the real message appears in the window's error label (or via the debugger), it'll
+be the `InnerException` text that matters, not the outer `TypeInitializationException` wrapper. The
+leading hypothesis: ScottPlot 5.x renders and measures text via SkiaSharp, which ships its actual
+work in native (non-.NET) libraries — `runtimes/win-x64/native/libSkiaSharp.dll` and possibly
+`libHarfBuzzSharp.dll` — that a normal `dotnet build`/`publish` output folder gets copied into
+automatically, but a folder MATLAB loads `OppStreamer.Diagnostics.dll` from via `NET.addAssembly`
+might not, if that folder isn't a real publish output. Worth checking: does that `runtimes\win-x64\
+native\` subfolder (with those two DLLs in it) actually exist next to `OppStreamer.Diagnostics.dll`
+in whatever folder MATLAB is pointed at? If not, copying it there (or pointing MATLAB at a proper
+`dotnet publish` output instead of a bare build folder) is the likely fix.
+
+**Still unverified, lower-risk:** the exact ScottPlot API calls (`Plot.Add.Scatter`,
+`Plot.Axes.SetLimitsX/Y`) target ScottPlot 5.x, matching the `Version="5.*"` package reference in
+`OppStreamer.Diagnostics.csproj`. If your restore resolves ScottPlot 4.x instead (e.g. if 5.x isn't
+actually released/stable by the time you build this — worth double-checking on nuget.org), these
+calls need adjusting to the older `AddScatter`-style API — a contained, mechanical change confined
+to `DiagnosticsView.cs`.
+
+**Verified, via the same fake-hardware harness approach used for `ConfigApi` all along:** the real,
+unmodified `ConfigApi.cs` compiles and behaves correctly against a fake `DiagnosticsHost` (plus the
+existing fake Hardware stand-ins) — `Initialize()` constructs it exactly once, `Close()` disposes
+it exactly once, a construction failure propagates cleanly rather than leaving `IsOpen()` in a
+half-open state, and the `isStreaming`/`waveforms` delegates `ConfigApi` hands it stay live (not
+stale) as `Start()`/`Stop()` run. 8 scenarios, all passing, unaffected by the 2026-08-18 rewrite
+since `DiagnosticsHost`'s public surface (constructor signature, `IDisposable`) didn't change.
+
 ## Known gaps / next stages
 
 Per the design doc's staged build plan:
 
-- The MATLAB-facing `ConfigApi` surface (string/double[] calls translating into the enum-based
-  calls `StreamerEngine` exposes today) — note `SendTts` currently takes `float[]`, matching every
-  other Core API; converting from MATLAB's `double[]` is explicitly ConfigApi's job, not
-  `TtsPlayer`'s.
-- Diagnostics window with the real-time stacked plot
+- Validation against the real LabVIEW streamer, and packaging/rollout decisions (design doc §7,
+  items 6–7)
+- DiagnosticsView's WinForms/ScottPlot pieces need real-machine verification — see "DiagnosticsView"
+  above for exactly what to check.
 
 ## A design decision worth double-checking
 

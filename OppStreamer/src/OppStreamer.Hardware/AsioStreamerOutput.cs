@@ -22,9 +22,15 @@ public sealed class AsioStreamerOutput : IStreamerAudioOutput
     private readonly MicBridge _testerMic = new();
     private readonly MicBridge _boothMic = new();
 
+    // See WasapiStreamerOutput's identical field for the bucketing rationale (10ms x 500 = 5s of
+    // DiagnosticsView history, design doc §5.7).
+    private readonly WaveformMonitor _waveforms = new(MonitoredChannel.Names, samplesPerBucket: SampleRate / 100, bucketsPerChannel: 500);
+
     public AsioStreamerOutput(StreamerEngine engine) => _engine = engine ?? throw new ArgumentNullException(nameof(engine));
 
     public bool IsRunning => _asioOut is not null;
+
+    public WaveformMonitor Waveforms => _waveforms;
 
     /// <summary>Tester mic bridge (channel 6) — for diagnostics (UnderrunSampleCount, OverflowSampleCount, CurrentFillLevel).</summary>
     public MicBridge TesterMic => _testerMic;
@@ -32,8 +38,29 @@ public sealed class AsioStreamerOutput : IStreamerAudioOutput
     /// <summary>Booth mic bridge (channel 7) — for diagnostics (UnderrunSampleCount, OverflowSampleCount, CurrentFillLevel).</summary>
     public MicBridge BoothMic => _boothMic;
 
-    /// <summary>ASIO driver names currently visible to Windows.</summary>
-    public static IReadOnlyList<string> EnumerateDrivers() => AsioOut.GetDriverNames();
+    /// <summary>
+    /// ASIO driver names currently visible to Windows. Defensively wrapped: enumerating ASIO
+    /// drivers means querying every ASIO driver registered on the machine (including third-party
+    /// ones), and a single misbehaving/orphaned driver registration is a known way for that to
+    /// throw for ALL drivers, not just the bad one — or, worse, to fault natively rather than raise
+    /// an ordinary .NET exception at all (see the 2026-08-16 MATLAB crash: a SEHException that
+    /// reached AppDomain.UnhandledException instead of surfacing as a catchable error — .NET Core
+    /// cannot catch a true corrupted-state/access-violation-class fault in-process no matter how
+    /// this method is written, so this catch is a real but partial mitigation, not a guarantee).
+    /// Returning an empty list on failure at least degrades to "no ASIO drivers usable" instead of
+    /// throwing somewhere a caller isn't expecting it.
+    /// </summary>
+    public static IReadOnlyList<string> EnumerateDrivers()
+    {
+        try
+        {
+            return AsioOut.GetDriverNames();
+        }
+        catch (Exception)
+        {
+            return Array.Empty<string>();
+        }
+    }
 
     public void Start(string deviceName, string? testerMicDeviceName = null, string? boothMicDeviceName = null)
     {
@@ -43,7 +70,7 @@ public sealed class AsioStreamerOutput : IStreamerAudioOutput
         var asioOut = new AsioOut(deviceName);
         try
         {
-            var sampleProvider = new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic);
+            var sampleProvider = new StreamerSampleProvider(_engine, SampleRate, _testerMic, _boothMic, _waveforms);
             // NAudio negotiates the driver's actual ASIOSampleType (commonly 24-in-32, sometimes
             // float32) against this format internally — we don't special-case it (design doc §5.9).
             asioOut.Init(new SampleToWaveProvider(sampleProvider));

@@ -23,6 +23,22 @@ namespace OppStreamer.Hardware;
 /// silence on Read(), so an omitted mic device degrades to a silent channel — no null-checking
 /// needed here. TtsPlayer degrades the same way when nothing's been queued yet.
 /// </summary>
+/// <summary>
+/// Index order (and matching display names) for <see cref="WaveformMonitor"/>'s compact
+/// channel numbering used by <see cref="StreamerSampleProvider"/> — deliberately NOT the same
+/// numbering as the interleaved 8-channel wire format's channel indices (0-7, with 0-1 reserved):
+/// this only covers the six channels that ever carry real content, worth plotting in
+/// DiagnosticsView (design doc §5.7). Shared here so both <see cref="StreamerSampleProvider"/>
+/// (the writer) and whichever <see cref="IStreamerAudioOutput"/> constructs the
+/// <see cref="WaveformMonitor"/> (the names list) agree on the same order.
+/// </summary>
+internal static class MonitoredChannel
+{
+    public const int Caregiver = 0, Waver = 1, Subject = 2, Tts = 3, TesterMic = 4, BoothMic = 5;
+
+    public static readonly string[] Names = { "Caregiver", "Waver", "Subject", "TTS", "Tester Mic", "Booth Mic" };
+}
+
 internal sealed class StreamerSampleProvider : ISampleProvider
 {
     private const int ChannelCount = 8;
@@ -32,6 +48,7 @@ internal sealed class StreamerSampleProvider : ISampleProvider
     private readonly StreamerEngine _engine;
     private readonly MicBridge _testerMic;
     private readonly MicBridge _boothMic;
+    private readonly WaveformMonitor _waveforms;
 
     // Reused across Read() calls to avoid per-callback allocation on the audio thread.
     private float[] _caregiver = Array.Empty<float>();
@@ -41,11 +58,12 @@ internal sealed class StreamerSampleProvider : ISampleProvider
     private float[] _boothMicFrame = Array.Empty<float>();
     private float[] _ttsFrame = Array.Empty<float>();
 
-    public StreamerSampleProvider(StreamerEngine engine, int sampleRate, MicBridge testerMic, MicBridge boothMic)
+    public StreamerSampleProvider(StreamerEngine engine, int sampleRate, MicBridge testerMic, MicBridge boothMic, WaveformMonitor waveforms)
     {
         _engine = engine ?? throw new ArgumentNullException(nameof(engine));
         _testerMic = testerMic ?? throw new ArgumentNullException(nameof(testerMic));
         _boothMic = boothMic ?? throw new ArgumentNullException(nameof(boothMic));
+        _waveforms = waveforms ?? throw new ArgumentNullException(nameof(waveforms));
 
         // Deliberately the plain (non-extensible) IEEE float format, not WaveFormatExtensible —
         // NAudio's SampleToWaveProvider/SampleToWaveProvider16 both require their *source*
@@ -84,6 +102,16 @@ internal sealed class StreamerSampleProvider : ISampleProvider
         _testerMic.Read(_testerMicFrame.AsSpan(0, frameCount));
         _boothMic.Read(_boothMicFrame.AsSpan(0, frameCount));
         _engine.RenderTts(_ttsFrame.AsSpan(0, frameCount));
+
+        // Feeds DiagnosticsView (design doc §5.7's "publishes a decimated snapshot of the frame")
+        // — cheap running min/max bucketing, see WaveformMonitor's own doc comment for why this is
+        // safe to do unconditionally on the audio thread every callback.
+        _waveforms.Accumulate(MonitoredChannel.Caregiver, _caregiver.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.Waver, _waver.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.Subject, _subject.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.Tts, _ttsFrame.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.TesterMic, _testerMicFrame.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.BoothMic, _boothMicFrame.AsSpan(0, frameCount));
 
         for (int i = 0; i < frameCount; i++)
         {

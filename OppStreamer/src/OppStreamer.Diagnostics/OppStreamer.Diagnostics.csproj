@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+    UNVERIFIED IN-SANDBOX, same as OppStreamer.Hardware/OppStreamer.ConfigApi: this needs the
+    Microsoft.WindowsDesktop.App reference pack (for UseWindowsForms), not available in the cloud
+    sandbox this was drafted in (no Windows — see README.md). Builds and runs normally on a
+    Windows dev machine.
+
+    2026-08-18: dropped the ScottPlot.WinForms package reference — see the "DiagnosticsView" section
+    of README.md. MATLAB hosts this under the .NET Framework CLR (a deliberate choice, made to
+    avoid separate dotnetenv("core") issues), and ScottPlot 5.x's SkiaSharp dependency pulls in
+    modern-.NET-only pieces of the BCL that plain .NET Framework hosting can't resolve, no matter
+    what's sitting in the output folder — not a missing-file problem, a wrong-runtime problem.
+    DiagnosticsView now draws the waveform envelope itself with plain GDI+ (System.Drawing), which
+    ships as part of the BCL under both .NET Framework and .NET Core, so it doesn't care which one
+    MATLAB is hosting.
+  -->
+
+	<PropertyGroup>
+		<TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<UserSecretsId>112f5ab4-2b7e-434f-85f9-87a7205c9df0</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="KLib" Version="1.8.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\OppStreamer.Core\OppStreamer.Core.csproj" />
+	</ItemGroup>
+
+</Project>
