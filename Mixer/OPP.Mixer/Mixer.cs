@@ -58,6 +58,24 @@ namespace OPP.Mixer
             return DoInitialization();
         }
 
+        public bool IsAvailable(string url)
+        {
+            if (_motu == null)
+            {
+                _motu = new MotuClient(url);
+            }
+            else
+            {
+                if (!_motu.IsUrl(url))
+                {
+                    _motu.Dispose();
+                    _motu = new MotuClient(url);
+                }
+            }
+
+            return TestConnection();
+        }
+
         public string LastErrorMessage => _lastErrorMessage;
 
         private bool DoInitialization()

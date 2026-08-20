@@ -9,13 +9,38 @@ using Newtonsoft.Json.Linq;
 
 public sealed class MotuClient : IDisposable
 {
+    // Recognized dev-machine stand-ins for a real MOTU URL. Case-insensitive.
+    // Prefer SimulatedUrl in code/config so the literal only lives in one place.
+    public const string SimulatedUrl = "simulated";
+    private static readonly string[] SimulationSentinels = { SimulatedUrl, "dummy", "sim" };
+
     private readonly HttpClient _http;
+    private readonly string _openedWith;   // raw string passed to the string ctor, incl. sentinels
 
     // "open" — once, in the controller. Reuse for the client's whole life.
-    public MotuClient(string baseUrl) : this(MakeClient(baseUrl)) { }
+    public MotuClient(string baseUrl) : this(BuildTransport(baseUrl))
+    {
+        _openedWith = baseUrl;
+    }
 
     // injectable transport — keeps the fake-handler tests working unchanged
     public MotuClient(HttpClient http) { _http = http; }
+
+    public static bool IsSimulatedUrl(string url) =>
+        url != null && Array.Exists(SimulationSentinels, s => string.Equals(s, url, StringComparison.OrdinalIgnoreCase));
+
+    private static HttpClient BuildTransport(string baseUrl)
+    {
+        if (IsSimulatedUrl(baseUrl))
+        {
+            // No real instrument on this machine — hand back a stateful stand-in instead.
+            return new HttpClient(new SimulatedMotuHandler())
+            {
+                BaseAddress = new Uri("http://simulated.motu.local/")
+            };
+        }
+        return MakeClient(baseUrl);
+    }
 
     private static HttpClient MakeClient(string baseUrl)
     {
@@ -26,6 +51,14 @@ public sealed class MotuClient : IDisposable
         return client;
     }
 
+    // Compare against the string this client was opened with (real URL or sentinel),
+    // not BaseAddress — a simulated client's BaseAddress is a synthetic placeholder,
+    // so comparing raw input is what lets Mixer.IsAvailable("simulated") reuse the
+    // same simulated instance (and its accumulated fader/mute state) on repeat calls.
+    public bool IsUrl(string url) =>
+        _openedWith != null
+            ? string.Equals(_openedWith, url, StringComparison.OrdinalIgnoreCase)
+            : _http.BaseAddress.ToString().Equals(url, StringComparison.OrdinalIgnoreCase);
     public Task<HttpResponseMessage> GetAsync(string path, CancellationToken cancellationToken)
     {
         return _http.GetAsync(path, cancellationToken);
