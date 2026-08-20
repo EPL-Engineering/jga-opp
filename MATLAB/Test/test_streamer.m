@@ -6,8 +6,8 @@ for k = 1:asm.Length
 end
 
 if ~isLoaded
-   NET.addAssembly(fullfile(getenv('DEVROOT'), 'Arenberg\jga_opp\Streamer\src\OppStreamer.ConfigApi\bin\Release\net48\OppStreamer.ConfigApi.dll'));
-   NET.addAssembly(fullfile(getenv('DEVROOT'), 'Arenberg\jga_opp\MATLAB\OPP\DotNet\Voice', 'KLib.WindowsVoice.dll'));
+   NET.addAssembly(fullfile(getenv('DEVROOT'), 'Arenberg\jga-opp\Streamer\src\OppStreamer.ConfigApi\bin\Debug\net48\OppStreamer.ConfigApi.dll'));
+   NET.addAssembly(fullfile(getenv('DEVROOT'), 'Arenberg\jga-opp\MATLAB\OPP\DotNet\Voice', 'KLib.WindowsVoice.dll'));
 end
 
 hStream = OppStreamer.ConfigApi.ConfigApi;

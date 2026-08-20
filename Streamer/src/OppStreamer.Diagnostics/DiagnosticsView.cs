@@ -44,7 +44,7 @@ internal sealed class DiagnosticsView : Form
     private const int TargetRedrawHz = 15;
 
     private static readonly System.Drawing.Size CollapsedSize = new(260, 40);
-    private static readonly System.Drawing.Size ExpandedSize = new(600, 600);
+    private static readonly System.Drawing.Size ExpandedSize = new(500, 500);
 
     private readonly Func<bool> _isStreaming;
     private readonly Func<WaveformMonitor?> _waveforms;
@@ -72,11 +72,12 @@ internal sealed class DiagnosticsView : Form
         _waveforms = waveforms ?? throw new ArgumentNullException(nameof(waveforms));
 
         Text = "Streamer";
-        RestoreLastPosition();
+        StartPosition = FormStartPosition.CenterScreen;
         // Fixed, non-maximizable: the whole point of starting collapsed is that the Tester can't
         // see the plot by default — don't let them get there by dragging the window bigger either.
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
+        ShowIcon = false;
 
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, ColumnCount = 1 };
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 36f));
@@ -137,45 +138,6 @@ internal sealed class DiagnosticsView : Form
         _redrawTimer = new System.Windows.Forms.Timer { Interval = 1000 / TargetRedrawHz };
         _redrawTimer.Tick += (_, _) => Redraw();
         _redrawTimer.Start();
-
-        this.FormClosing += DiagnosticsView_FormClosing;
-    }
-
-    private void DiagnosticsView_FormClosing(object sender, FormClosingEventArgs e)
-    {
-        Settings.LastPosition = new Rectangle(Location, Size);
-    }
-
-    private void RestoreLastPosition()
-    {
-        if (!Settings.LastPosition.IsEmpty)
-        {
-            // Validate that the saved position is still visible on screen
-            Rectangle savedBounds = Settings.LastPosition;
-            bool isVisible = false;
-
-            foreach (Screen screen in Screen.AllScreens)
-            {
-                if (screen.WorkingArea.IntersectsWith(savedBounds))
-                {
-                    isVisible = true;
-                    break;
-                }
-            }
-
-            if (isVisible)
-            {
-                StartPosition = FormStartPosition.Manual;
-                Location = new Point(savedBounds.X, savedBounds.Y);
-            }
-            else
-            {
-                // Position is off-screen, use default positioning
-                StartPosition = FormStartPosition.CenterScreen;
-                // Optionally clear the invalid position
-                Settings.LastPosition = Rectangle.Empty;
-            }
-        }
     }
 
     /// <summary>
@@ -354,12 +316,40 @@ internal sealed class DiagnosticsView : Form
                 if (_max[i] > hiY) hiY = _max[i];
             }
 
-            // Headroom so the trace doesn't hug the panel edges; guards against a zero-span axis
-            // (loY == hiY, e.g. before any real non-silent audio has been seen).
-            float pad = Math.Max(0.05f, (hiY - loY) * 0.1f);
-            loY -= pad;
-            hiY += pad;
-            if (hiY <= loY) hiY = loY + 1f;
+            // Headroom so the trace doesn't hug the panel edges — purely proportional to the
+            // signal's own observed span (10% top and bottom). Deliberately NOT a fixed absolute
+            // floor (an earlier version used Math.Max(0.05f, ...) here): a fixed floor swamps any
+            // signal whose true amplitude is small relative to 0.05 — e.g. a tone pip at a real,
+            // legitimate amplitude of ~0.02 would get padded out to a ~0.12 total range, filling
+            // under a fifth of the panel regardless of how tall the panel actually is. Purely
+            // proportional padding instead keeps the trace filling ~80% of the panel no matter the
+            // absolute amplitude, which is the actual point of autoscaling.
+            //
+            // 2026-08-20 fix: a flat/constant window (loY == hiY exactly — e.g. TTS's literal 0f
+            // silence once its queue runs dry, or Subject sitting on a constant Background buffer
+            // after a trial ends) has zero span, so 10% of it is also zero — there's nothing for
+            // the proportional padding above to work with, and an EARLIER version of this fallback
+            // (`hiY = loY + 1f`) pinned the flat value to the BOTTOM of that 1-unit window. Fed into
+            // MapY, that put the entire trace at pixel row `height` — one row past the last visible
+            // row of the panel, clipped and invisible. That's the actual mechanism behind "the trace
+            // goes blank when the stimulus/speech stops": not NaN/Infinity anywhere (every value
+            // here is an ordinary finite float — 0f is exactly representable, and nothing in this
+            // averaging/comparison chain divides by anything), just a flat value silently drawn
+            // just offscreen. Centering the fallback window on the constant value instead — rather
+            // than starting the window AT that value — draws a flat trace as a visible line down
+            // the panel's middle, matching what you'd expect to see for a genuinely constant signal.
+            float span = hiY - loY;
+            if (span <= 0f)
+            {
+                loY -= 0.5f;
+                hiY += 0.5f;
+            }
+            else
+            {
+                float pad = span * 0.1f;
+                loY -= pad;
+                hiY += pad;
+            }
 
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;

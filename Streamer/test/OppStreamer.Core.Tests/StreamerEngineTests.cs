@@ -21,6 +21,8 @@ public static class StreamerEngineTests
         runner.Test("Trigger(containsProbe: false) opens the trial window without changing Subject audio", NoProbeTrialOpensWindowSilently);
         runner.Test("TrainTest switches all three participants together, at the same boundary", TrainTestSwitchesAllThreeTogether);
         runner.Test("SetTrainingStimulusSet applies to all four training buffers atomically", TrainingStimulusSetIsAtomic);
+        runner.Test("SetStimulusSet applies to all four buffers of an explicit mode atomically (2026-08-20)", StimulusSetIsAtomicForExplicitMode);
+        runner.Test("SetStimulusSet(Test, ...) avoids the torn update that one-at-a-time SetSignal calls can produce", StimulusSetAvoidsTornUpdate);
         runner.Test("Mismatched buffer length is rejected", MismatchedLengthThrows);
         runner.Test("Multiple loop wraps within one frame are each handled in order (sample-accurate)", MultipleWrapsWithinOneFrame);
         runner.Test("A second Trigger() during an active trial is dropped, not queued", RetriggerDuringActiveTrialIsDropped);
@@ -165,6 +167,96 @@ public static class StreamerEngineTests
         Check.Equal(Marker(5, 100f), c, "Caregiver should reflect the new training set");
         Check.Equal(Marker(5, 200f), w, "Waver should reflect the new training set");
         Check.Equal(Marker(5, 300f), s, "Subject should reflect the new training set");
+    }
+
+    private static void StimulusSetIsAtomicForExplicitMode()
+    {
+        // Mirrors TrainingStimulusSetIsAtomic, but exercises the new mode-parameterized entry
+        // point directly against Test — the mode OPP's "currently selected Phase" actually plays
+        // through, and the case that originally prompted this method (see StimulusSetAvoidsTornUpdate).
+        const int loopLen = 5;
+        var engine = new StreamerEngine();
+        engine.Reset(loopLen);
+
+        engine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 1f));
+        engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 2f));
+        engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 3f));
+
+        Span<float> c = stackalloc float[5], w = stackalloc float[5], s = stackalloc float[5];
+
+        engine.RenderFrame(2, c[..2], w[..2], s[..2]); // partway through a Test loop
+        engine.SetStimulusSet(OperatingMode.Test,
+            caregiver: Marker(loopLen, 100f),
+            waver: Marker(loopLen, 200f),
+            subjectBackground: Marker(loopLen, 300f),
+            subjectSignal: Marker(loopLen, 400f));
+
+        // Rest of the in-progress loop must still show the OLD content.
+        engine.RenderFrame(3, c[..3], w[..3], s[..3]);
+        Check.Equal(Marker(3, 1f), c[..3], "Caregiver must finish the loop on the old buffer");
+        Check.Equal(Marker(3, 2f), w[..3], "Waver must finish the loop on the old buffer");
+        Check.Equal(Marker(3, 3f), s[..3], "Subject must finish the loop on the old buffer");
+
+        // Next loop: all three land on the NEW content simultaneously, in one call.
+        engine.RenderFrame(5, c, w, s);
+        Check.Equal(Marker(5, 100f), c, "Caregiver should reflect the new stimulus set");
+        Check.Equal(Marker(5, 200f), w, "Waver should reflect the new stimulus set");
+        Check.Equal(Marker(5, 300f), s, "Subject should reflect the new stimulus set");
+    }
+
+    private static void StimulusSetAvoidsTornUpdate()
+    {
+        // Demonstrates the exact hazard SetStimulusSet was built to close (see its doc comment and
+        // ConfigApi.SetStimulusSet's), and confirms it's actually closed. Two identically-bootstrapped
+        // engines: one updated via three separate one-at-a-time calls with a loop boundary landing
+        // in between (standing in for an audio-thread boundary crossing mid-sequence — the real
+        // production race), the other via one SetStimulusSet call. The one-at-a-time engine should
+        // show a visibly torn loop pass; the atomic one should not.
+        const int loopLen = 4;
+
+        StreamerEngine Bootstrap()
+        {
+            var engine = new StreamerEngine();
+            engine.Reset(loopLen);
+            engine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 1f));
+            engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 2f));
+            engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 3f));
+            return engine;
+        }
+
+        Span<float> c = stackalloc float[4], w = stackalloc float[4], s = stackalloc float[4];
+
+        // --- One-at-a-time: Caregiver is changed and queued, then a boundary is crossed before
+        // Waver/Subject are ever set — exactly like an unlucky audio-thread timing in production.
+        var tornEngine = Bootstrap();
+        tornEngine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 100f));
+        tornEngine.RenderFrame(4, c, w, s); // crosses a boundary — only Caregiver's change was queued for it
+
+        tornEngine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 200f));
+        tornEngine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 300f));
+
+        tornEngine.RenderFrame(4, c, w, s); // this loop pass shows the TORN mix
+        Check.Equal(Marker(4, 100f), c, "Caregiver already switched (it was queued before the boundary)...");
+        Check.Equal(Marker(4, 2f), w, "...but Waver is torn — stuck on the OLD value for this whole loop pass...");
+        Check.Equal(Marker(4, 3f), s, "...and so is Subject — exactly the hazard SetStimulusSet exists to close");
+
+        tornEngine.RenderFrame(4, c, w, s); // next boundary — the rest finally catches up, one full loop late
+        Check.Equal(Marker(4, 200f), w, "Waver only catches up on the FOLLOWING boundary");
+        Check.Equal(Marker(4, 300f), s, "Subject only catches up on the FOLLOWING boundary");
+
+        // --- Atomic: the exact same overall change, issued as one SetStimulusSet call — no boundary
+        // can land "inside" a single call, so nothing is ever torn.
+        var atomicEngine = Bootstrap();
+        atomicEngine.SetStimulusSet(OperatingMode.Test,
+            caregiver: Marker(loopLen, 100f),
+            waver: Marker(loopLen, 200f),
+            subjectBackground: Marker(loopLen, 300f),
+            subjectSignal: Marker(loopLen, 400f));
+        atomicEngine.RenderFrame(4, c, w, s); // boundary crossed; all three drained together
+        atomicEngine.RenderFrame(4, c, w, s); // observe: all three landed on the SAME boundary
+        Check.Equal(Marker(4, 100f), c, "Caregiver reflects the new set");
+        Check.Equal(Marker(4, 200f), w, "Waver reflects the new set, on the SAME boundary as Caregiver");
+        Check.Equal(Marker(4, 300f), s, "Subject reflects the new set, on the SAME boundary as Caregiver — nothing torn");
     }
 
     private static void MismatchedLengthThrows()

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using OppStreamer.Core;
 using OppStreamer.Diagnostics;
 using OppStreamer.Hardware;
@@ -110,12 +111,37 @@ public sealed class ConfigApi : IDisposable
     public bool IsOpen() => _isOpen;
 
     /// <summary>
+    /// ADDITION beyond the mirrored surface — hides or re-shows the diagnostics window without
+    /// closing/reopening the session (compare <see cref="Close"/>, which tears it down entirely).
+    /// Added 2026-08-19 specifically as a workaround for MATLAB hanging on its native "Save
+    /// Settings" dialog while this window (or Mixer's) is visible — see the README's 2026-08-19
+    /// entry under "DiagnosticsView" for the full story, including a caveat about when this might
+    /// NOT be enough to fix it. Typical call pattern from the OPP MATLAB app's save-settings
+    /// handler: <c>SetDiagnosticsVisible(false)</c> right before opening the save dialog, then
+    /// <c>SetDiagnosticsVisible(true)</c> once it's closed. A no-op (not an error) if
+    /// Initialize() hasn't been called yet, or after Close() — nothing to show/hide either way.
+    /// </summary>
+    public void SetDiagnosticsVisible(bool visible) => _diagnosticsHost?.SetVisible(visible);
+
+    /// <summary>
     /// ADDITION beyond the mirrored surface (§5.8's "unchanged" list has no equivalent) — whether
     /// the audio device is actually streaming right now, i.e. between Start() and Stop(). Harmless
     /// to ignore if the MATLAB side doesn't need it; included because it's a natural, cheap
     /// diagnostic and every lower layer already tracks it (IStreamerAudioOutput.IsRunning).
     /// </summary>
     public bool IsStreaming => _output?.IsRunning ?? false;
+
+    /// <summary>
+    /// ADDITION beyond the mirrored surface (§5.8's "unchanged" list has no equivalent) — true while a
+    /// trial's trial-active-window is open: from the loop boundary a pending Trigger() takes effect,
+    /// through the full repeat count configured via SetNumReps, until that countdown reaches zero.
+    /// True regardless of whether the trial actually contains a probe — Trigger(containsProbe: false)
+    /// opens the window and counts down reps exactly like a probe trial, it just never switches
+    /// Subject off the Background buffer while doing so. Thin pass-through to
+    /// StreamerEngine.TrialActiveWindowOpen (see TrialStateMachine.OnBoundary for the underlying
+    /// state machine).
+    /// </summary>
+    public bool IsTrialActive => _engine.TrialActiveWindowOpen;
 
     /// <summary>
     /// ADDITION beyond the mirrored surface — the message of the most recent Start() failure, if
@@ -137,18 +163,19 @@ public sealed class ConfigApi : IDisposable
     public string[] EnumerateMicrophones() => StreamerAudioOutputFactory.EnumerateMicDevices().ToArray();
 
     /// <summary>
-    /// Output device names available for SetConfig()'s outputDeviceName. ASSUMPTION: since §5.8's
-    /// "unchanged" list has no separate backend-selection parameter anywhere, this implements the
-    /// "try ASIO devices first, fall back to WASAPI if none are present" option §5.4 explicitly
-    /// floats — if any ASIO driver is present (the MOTU, in production), only ASIO names are
-    /// returned; otherwise WASAPI render device names are returned (a dev/test machine without the
-    /// MOTU). SetConfig() below resolves whichever name it's given against both lists anyway, so
-    /// this only affects what a MATLAB-side dropdown would show by default.
+    /// Output device names available for SetConfig()'s outputDeviceName — both ASIO drivers and
+    /// WASAPI render devices combined into one list, so a MATLAB-side dropdown shows everything
+    /// usable at once rather than ASIO-if-any-else-WASAPI. (Earlier version did the either/or thing
+    /// per §5.4's "try ASIO first, fall back to WASAPI" phrasing — changed 2026-08-19 since showing
+    /// both is simply more convenient and SetConfig()/ResolveBackend() already resolve a name
+    /// against both lists regardless of what this method returns, so nothing downstream cared which
+    /// way this went.)
     /// </summary>
     public string[] EnumerateOutputDevices()
     {
         var asio = StreamerAudioOutputFactory.EnumerateDevices(AudioBackend.Asio);
-        return (asio.Count > 0 ? asio : StreamerAudioOutputFactory.EnumerateDevices(AudioBackend.Wasapi)).ToArray();
+        var wasapi = StreamerAudioOutputFactory.EnumerateDevices(AudioBackend.Wasapi);
+        return asio.Concat(wasapi).ToArray();
     }
 
     /// <summary>True if <paramref name="deviceName"/> is a currently active WASAPI capture device.</summary>
@@ -421,8 +448,36 @@ public sealed class ConfigApi : IDisposable
     }
 
     /// <summary>
+    /// Atomically updates all four of a mode's buffers (Caregiver, Waver, Subject Background,
+    /// Subject Signal) together, guaranteed to land on a single loop boundary rather than being
+    /// staggered across separate calls to <see cref="SetSignal"/>.
+    ///
+    /// ADDED 2026-08-20, generalizing <see cref="SetTrainingStimulusSet"/> (design doc §5.3, kept
+    /// below as a Training-only alias) to accept either mode. Ken's OPP code was calling
+    /// <see cref="SetSignal"/> once per participant (Caregiver, Waver, Subject Background, Subject
+    /// Signal — four separate calls) to update the currently-selected phase's stimuli. That works
+    /// fine as long as all four calls land before the next boundary, but each call queues
+    /// independently — the audio thread can drain and apply whatever's queued so far at ANY
+    /// boundary, including one that happens to land between two of those calls. Worst case: one
+    /// torn loop pass (part of the group already switched, part still on the old buffers) before
+    /// the rest catches up on the following boundary — narrow and timing-dependent, but a real
+    /// mismatch in what's actually played, not just a bookkeeping glitch. This method closes that
+    /// gap by queuing the whole group as one atomic unit, the same guarantee
+    /// <see cref="SetTrainingStimulusSet"/> already gave Training buffers — see
+    /// <see cref="OppStreamer.Core.StimulusStore.SetStimulusSet"/> for the full mechanism.
+    /// </summary>
+    public void SetStimulusSet(string mode, double[] caregiver, double[] waver, double[] subjectBackground, double[] subjectSignal)
+    {
+        RequireOpen();
+        var m = ParseMode(mode);
+        _engine.SetStimulusSet(m, ToFloat(caregiver), ToFloat(waver), ToFloat(subjectBackground), ToFloat(subjectSignal));
+    }
+
+    /// <summary>
     /// Atomically updates all four Training buffers together (design doc §5.3) — the entry point
-    /// for the new "vary the training masker/probe combination on the fly" feature.
+    /// for the "vary the training masker/probe combination on the fly" feature. Equivalent to
+    /// <c>SetStimulusSet("Training", ...)</c>; kept as its own method so existing Training-specific
+    /// call sites need no change.
     ///
     /// NOTE: §5.3's own early sketch of this method's signature was
     /// <c>SetTrainingStimulusSet(Dictionary&lt;string, double[]&gt; byParticipant)</c> — that was
@@ -455,6 +510,53 @@ public sealed class ConfigApi : IDisposable
     {
         RequireOpen();
         _engine.SendTts(ToFloat(signal));
+    }
+
+    /// <summary>
+    /// ADDITION beyond the mirrored surface — blocks (up to <paramref name="timeoutSeconds"/>)
+    /// until whatever was most recently queued via SetSignal/SetTrainer/SetStimulusSet/
+    /// SetTrainingStimulusSet/TrainTest/Trigger has actually been applied at the next loop
+    /// boundary. See
+    /// <see cref="StreamerEngine.WaitForLatch"/> for the full mechanism.
+    ///
+    /// Added 2026-08-19 specifically to replace the old LabVIEW-era "SetAudioStream" pattern (stop
+    /// the stream, set new waveforms, wait for stopped, start again, wait for started, checking for
+    /// an error at each wait) for the two of its three steps that were actually about changing
+    /// stimulus content — this streamer's whole boundary-latch design means content can change live
+    /// with no Stop()/Start() at all. (The third original step, closing down at session end, still
+    /// maps onto <see cref="Stop"/> — poll <see cref="IsStreaming"/> with your own timeout, then
+    /// call <see cref="Close"/> regardless, same shape as before — no new method needed for that
+    /// one.) Loop length/timing is NOT something this covers — per how OPP is actually used, that
+    /// only changes via a full session restart, not on the fly, so <see cref="SetConfig"/>'s
+    /// existing "throws if you try to change it while streaming" guard is still the right behavior
+    /// there.
+    ///
+    /// Typical replacement call pattern:
+    /// <code>
+    /// configApi.SetStimulusSet(...);   // or SetSignal / SetTrainer / SetTrainingStimulusSet / TrainTest / Trigger
+    /// if (!configApi.WaitForLatch(timeoutSeconds))
+    /// {
+    ///     // Didn't latch in time — check IsStreaming / LastError. See the caveat below on what
+    ///     // that can and can't tell you.
+    /// }
+    /// </code>
+    ///
+    /// CAVEAT, carried over from <see cref="LastError"/>'s own doc comment: a timeout here most
+    /// likely means audio genuinely isn't rendering right now — never Start()'d, or the device
+    /// stalled/dropped mid-session — but if the cause IS a mid-stream device failure, LastError
+    /// won't necessarily explain why, since that class of failure isn't wired up to LastError yet
+    /// (MicBridge/AsioOut currently swallow-and-log it internally). That said, a WaitForLatch
+    /// timeout is a MEANINGFULLY STRONGER signal that something's wrong than IsStreaming ever was
+    /// on its own — IsStreaming only reflects "Start() was called and Stop() wasn't," not real
+    /// device health, whereas a timeout here means the audio thread genuinely isn't reaching a
+    /// boundary at all. It won't tell you why, but it will reliably tell you something's wrong.
+    /// </summary>
+    public bool WaitForLatch(double timeoutSeconds)
+    {
+        RequireOpen();
+        if (timeoutSeconds < 0)
+            throw new ArgumentOutOfRangeException(nameof(timeoutSeconds), "Must be non-negative.");
+        return _engine.WaitForLatch(TimeSpan.FromSeconds(timeoutSeconds));
     }
 
     // ------------------------------------------------------------------------------------------

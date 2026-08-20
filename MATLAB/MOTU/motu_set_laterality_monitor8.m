@@ -1,11 +1,11 @@
 function success = motu_set_laterality_monitor8(baseURL, ear)
 
-if isequal(baseURL, 'test')
+if isequal(baseURL, 'simulated')
    success = true;
    return;
 end
 
-baseURL = ['http://' baseURL '/datastore/'];
+baseURL = ['http://' baseURL '/datastore/'];s
 % baseURL = "http://169.254.221.196/datastore/";
 
 success = true;
