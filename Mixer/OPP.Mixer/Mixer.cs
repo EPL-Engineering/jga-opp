@@ -156,7 +156,7 @@ namespace OPP.Mixer
             int testerStimIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "TesterStim");
             if (testerStimIndex >= 0)
             {
-               _mixerPanel.ChannelStrips[testerStimIndex].MuteAndDisable(enable);
+               _mixerPanel.ChannelStrips[testerStimIndex].MuteAndDisable(!enable);
             }
         }
 

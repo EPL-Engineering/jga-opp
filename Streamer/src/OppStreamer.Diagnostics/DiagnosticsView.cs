@@ -72,7 +72,7 @@ internal sealed class DiagnosticsView : Form
         _waveforms = waveforms ?? throw new ArgumentNullException(nameof(waveforms));
 
         Text = "Streamer";
-        StartPosition = FormStartPosition.CenterScreen;
+        RestoreLastPosition();
         // Fixed, non-maximizable: the whole point of starting collapsed is that the Tester can't
         // see the plot by default — don't let them get there by dragging the window bigger either.
         FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -138,6 +138,45 @@ internal sealed class DiagnosticsView : Form
         _redrawTimer = new System.Windows.Forms.Timer { Interval = 1000 / TargetRedrawHz };
         _redrawTimer.Tick += (_, _) => Redraw();
         _redrawTimer.Start();
+
+        this.FormClosing += DiagnosticsView_FormClosing;
+    }
+
+    private void DiagnosticsView_FormClosing(object sender, FormClosingEventArgs e)
+    {
+        Settings.LastPosition = new Rectangle(Location, Size);
+    }
+
+    private void RestoreLastPosition()
+    {
+        if (!Settings.LastPosition.IsEmpty)
+        {
+            // Validate that the saved position is still visible on screen
+            Rectangle savedBounds = Settings.LastPosition;
+            bool isVisible = false;
+
+            foreach (Screen screen in Screen.AllScreens)
+            {
+                if (screen.WorkingArea.IntersectsWith(savedBounds))
+                {
+                    isVisible = true;
+                    break;
+                }
+            }
+
+            if (isVisible)
+            {
+                StartPosition = FormStartPosition.Manual;
+                Location = new Point(savedBounds.X, savedBounds.Y);
+            }
+            else
+            {
+                // Position is off-screen, use default positioning
+                StartPosition = FormStartPosition.CenterScreen;
+                // Optionally clear the invalid position
+                Settings.LastPosition = Rectangle.Empty;
+            }
+        }
     }
 
     /// <summary>
