@@ -37,13 +37,14 @@
             // 
             // trackBar
             // 
-            this.trackBar.Location = new System.Drawing.Point(19, 35);
+            this.trackBar.Location = new System.Drawing.Point(16, 43);
+            this.trackBar.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.trackBar.Maximum = 0;
             this.trackBar.Minimum = -50;
             this.trackBar.Name = "trackBar";
             this.trackBar.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.trackBar.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.trackBar.Size = new System.Drawing.Size(45, 147);
+            this.trackBar.Size = new System.Drawing.Size(45, 181);
             this.trackBar.TabIndex = 0;
             this.trackBar.TickFrequency = 5;
             this.trackBar.TickStyle = System.Windows.Forms.TickStyle.Both;
@@ -54,9 +55,10 @@
             // 
             this.muteButton.Appearance = System.Windows.Forms.Appearance.Button;
             this.muteButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
-            this.muteButton.Location = new System.Drawing.Point(6, 204);
+            this.muteButton.Location = new System.Drawing.Point(2, 251);
+            this.muteButton.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.muteButton.Name = "muteButton";
-            this.muteButton.Size = new System.Drawing.Size(74, 24);
+            this.muteButton.Size = new System.Drawing.Size(73, 30);
             this.muteButton.TabIndex = 2;
             this.muteButton.Text = "Mute";
             this.muteButton.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -65,9 +67,10 @@
             // 
             // label
             // 
-            this.label.Location = new System.Drawing.Point(3, 9);
+            this.label.Location = new System.Drawing.Point(3, 11);
+            this.label.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label.Name = "label";
-            this.label.Size = new System.Drawing.Size(77, 23);
+            this.label.Size = new System.Drawing.Size(72, 28);
             this.label.TabIndex = 3;
             this.label.Text = "Signal";
             this.label.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -81,15 +84,16 @@
             this.numericBox.FloatValue = -3F;
             this.numericBox.IntValue = -3;
             this.numericBox.IsInteger = false;
-            this.numericBox.Location = new System.Drawing.Point(6, 181);
+            this.numericBox.Location = new System.Drawing.Point(3, 223);
+            this.numericBox.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.numericBox.MaxCoerce = true;
-            this.numericBox.MaximumSize = new System.Drawing.Size(20000, 20);
+            this.numericBox.MaximumSize = new System.Drawing.Size(26667, 27);
             this.numericBox.MaxValue = 0D;
             this.numericBox.MinCoerce = true;
-            this.numericBox.MinimumSize = new System.Drawing.Size(10, 20);
+            this.numericBox.MinimumSize = new System.Drawing.Size(13, 27);
             this.numericBox.MinValue = -50D;
             this.numericBox.Name = "numericBox";
-            this.numericBox.Size = new System.Drawing.Size(74, 20);
+            this.numericBox.Size = new System.Drawing.Size(72, 27);
             this.numericBox.TabIndex = 4;
             this.numericBox.TextFormat = "K1";
             this.numericBox.ToolTip = "";
@@ -99,14 +103,15 @@
             // 
             // ChannelStrip
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.numericBox);
             this.Controls.Add(this.label);
             this.Controls.Add(this.muteButton);
             this.Controls.Add(this.trackBar);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "ChannelStrip";
-            this.Size = new System.Drawing.Size(83, 232);
+            this.Size = new System.Drawing.Size(77, 286);
             ((System.ComponentModel.ISupportInitialize)(this.trackBar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

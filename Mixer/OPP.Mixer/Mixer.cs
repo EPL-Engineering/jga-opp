@@ -99,6 +99,8 @@ namespace OPP.Mixer
                 ActivateStrips();
                 waypoint = "MuteAudioStream";
                 MuteAudioStream(true);
+                waypoint = "EnableTesterStimulus";
+                EnableTesterStimulus(false);
                 waypoint = "";
             }
             catch (Exception ex)
@@ -116,7 +118,7 @@ namespace OPP.Mixer
 
         public void MuteAudioStream(bool mute)
         {
-            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus");
+            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" && strip.ChannelId != "TesterStim");
             foreach (var strip in stimStrips)
             {
                 strip.MuteAndDisable(mute);
@@ -146,6 +148,15 @@ namespace OPP.Mixer
             {
                 WriteMuteValue(talkbackIndex, true);
                 _mixerPanel.ChannelStrips[talkbackIndex].SetMuteSilently(true);
+            }
+        }
+
+        public void EnableTesterStimulus(bool enable)
+        {
+            int testerStimIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "TesterStim");
+            if (testerStimIndex >= 0)
+            {
+               _mixerPanel.ChannelStrips[testerStimIndex].MuteAndDisable(enable);
             }
         }
 

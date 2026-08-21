@@ -35,7 +35,9 @@ namespace OPP.Mixer
             ChannelStrips.Add(ttsStrip);
             ChannelStrips.Add(subjectStimStrip);
             ChannelStrips.Add(videoStrip);
+            ChannelStrips.Add(testerStimStrip);
             ChannelStrips.Add(testerStrip);
+            ChannelStrips.Add(testerTtsStrip);
         }
 
         private void RestoreLastPosition()
