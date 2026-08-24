@@ -99,8 +99,8 @@ namespace OPP.Mixer
                 ActivateStrips();
                 waypoint = "MuteAudioStream";
                 MuteAudioStream(true);
-                waypoint = "EnableTesterStimulus";
-                EnableTesterStimulus(false);
+                waypoint = "EnableTrainingMode";
+                EnableTrainingMode(false);
                 waypoint = "";
             }
             catch (Exception ex)
@@ -118,17 +118,12 @@ namespace OPP.Mixer
 
         public void MuteAudioStream(bool mute)
         {
-            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" && strip.ChannelId != "TesterStim");
+            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus");
             foreach (var strip in stimStrips)
             {
                 strip.MuteAndDisable(mute);
             }
-        }
-
-        public void ConnectMonitor(int signal)
-        {
-            //_motu.Write($"datastore/ext/obank/7/ch/0/src", $"16:{signal}");
-        }
+        } 
 
         public void ToggleTalkback()
         {
@@ -151,12 +146,18 @@ namespace OPP.Mixer
             }
         }
 
-        public void EnableTesterStimulus(bool enable)
+        public void EnableTrainingMode(bool enable)
         {
+            int waverStimIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "WaverStim");
+            if (waverStimIndex >= 0)
+            {
+                ConnectMixerInput(waverStimIndex, enable ? 3 : 2);
+            }
+
             int testerStimIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.ChannelId == "TesterStim");
             if (testerStimIndex >= 0)
             {
-               _mixerPanel.ChannelStrips[testerStimIndex].MuteAndDisable(!enable);
+                ConnectMixerInput(testerStimIndex, enable ? 3 : 2);
             }
         }
 
@@ -254,6 +255,11 @@ namespace OPP.Mixer
         private void WriteMuteValue(int channelIndex, bool muted)
         {
             _motu.Write($"datastore/mix/chan/{channelIndex}/matrix/mute", muted ? (int)1 : (int)0);
+        }
+
+        private void ConnectMixerInput(int channelIndex, int source)
+        {
+            _motu.Write($"ext/obank/17/ch/{channelIndex}/src", $"3:{source}");
         }
     }
 }

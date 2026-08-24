@@ -100,8 +100,12 @@ public sealed class MotuClient : IDisposable
     public Task WriteAsync(string path, int value)
         => PostValueAsync(path, JsonConvert.SerializeObject(new { value }));   // {"value":0}
 
+    public Task WriteAsync(string path, string value)
+        => PostValueAsync(path, JsonConvert.SerializeObject(new { value }));   // {"value":0}
+
     public void Write(string path, double value) => WriteAsync(path, value).GetAwaiter().GetResult();
     public void Write(string path, int value) => WriteAsync(path, value).GetAwaiter().GetResult();
+    public void Write(string path, string value) => WriteAsync(path, value).GetAwaiter().GetResult();
     // ---- synchronous entry points for MATLAB (can't await a Task) ----
     public T Get<T>(string path) => GetAsync<T>(path).GetAwaiter().GetResult();
 

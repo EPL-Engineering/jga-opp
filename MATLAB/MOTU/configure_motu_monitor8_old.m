@@ -1,0 +1,115 @@
+% EarLAB:
+baseURL = "http://169.254.228.35/datastore/";
+% Children's:
+% baseURL = "http://169.254.158.50/datastore/";
+
+%% === Name USB inputs ====================================================
+webwrite(baseURL + "ext/ibank/3/ch/0/name", 'json={"value":"Video 1"}');
+webwrite(baseURL + "ext/ibank/3/ch/1/name", 'json={"value":"Video 2"}');
+webwrite(baseURL + "ext/ibank/3/ch/2/name", 'json={"value":"Caregiver"}');
+webwrite(baseURL + "ext/ibank/3/ch/3/name", 'json={"value":"Waver"}');
+webwrite(baseURL + "ext/ibank/3/ch/4/name", 'json={"value":"Subject"}');
+webwrite(baseURL + "ext/ibank/3/ch/5/name", 'json={"value":"TTS"}');
+webwrite(baseURL + "ext/ibank/3/ch/6/name", 'json={"value":"Tester Mic"}');
+webwrite(baseURL + "ext/ibank/3/ch/7/name", 'json={"value":"Booth Mic"}');
+
+%% === Name mixer outputs =================================================
+webwrite(baseURL + "ext/ibank/16/ch/0/name", 'json={"value":"Caregiver Out"}');
+webwrite(baseURL + "ext/ibank/16/ch/1/name", 'json={"value":"Waver Out"}');
+webwrite(baseURL + "ext/ibank/16/ch/2/name", 'json={"value":"Participant Out"}');
+webwrite(baseURL + "ext/ibank/16/ch/3/name", 'json={"value":"Tester Out"}');
+
+%% === Name mixer inputs ==================================================
+% --- Caregiver ---
+webwrite(baseURL + "ext/obank/17/ch/0/name", 'json={"value":"Caregiver"}');     % In 1
+
+% --- Waver ---
+webwrite(baseURL + "ext/obank/17/ch/1/name", 'json={"value":"WaverStim"}');     % In 2
+webwrite(baseURL + "ext/obank/17/ch/2/name", 'json={"value":"Talkback"}');      % In 3
+webwrite(baseURL + "ext/obank/17/ch/3/name", 'json={"value":"WaverTTS"}');      % In 4
+
+% --- Subject ---
+webwrite(baseURL + "ext/obank/17/ch/4/name", 'json={"value":"Subject"}');      % In 5
+webwrite(baseURL + "ext/obank/17/ch/5/name", 'json={"value":"Video"}');        % In 6
+
+% --- Tester ---
+webwrite(baseURL + "ext/obank/17/ch/6/name", 'json={"value":"Booth"}');    % In 7
+
+% -- unused in old config ---
+webwrite(baseURL + "ext/obank/17/ch/7/name", 'json={"value":"In 8"}');      % In 8
+webwrite(baseURL + "ext/obank/17/ch/8/name", 'json={"value":"In 9"}');      % In 9
+webwrite(baseURL + "ext/obank/17/ch/9/name", 'json={"value":"In 10"}');     % In 10
+webwrite(baseURL + "ext/obank/17/ch/10/name", 'json={"value":"In 11"}');    % In 11
+
+%% Connect USB inputs to mixer inputs
+% --- Caregiver ---
+webwrite(baseURL + "ext/obank/17/ch/0/src", 'json={"value":"3:2"}'); % Caregiver to In 1 (Caregiver)
+
+% --- Waver ---
+webwrite(baseURL + "ext/obank/17/ch/1/src", 'json={"value":"3:3"}'); % Waver to In 2 (WaverStim)
+webwrite(baseURL + "ext/obank/17/ch/2/src", 'json={"value":"3:6"}'); % Tester Mic To In 3 (Talkback)
+webwrite(baseURL + "ext/obank/17/ch/3/src", 'json={"value":"3:5"}'); % TTS to In 4 (WaverTTS)
+
+% --- Subject ---
+webwrite(baseURL + "ext/obank/17/ch/4/src", 'json={"value":"3:4"}'); % Subject to In 6 (Stimulus)
+webwrite(baseURL + "ext/obank/17/ch/5/src", 'json={"value":"3:0"}'); % Video to In 7 (Video)
+
+% --- Tester ---
+webwrite(baseURL + "ext/obank/17/ch/6/src", 'json={"value":"3:7"}');  % Booth Mic To In 7 (Booth)
+
+%% === Connect mixer outputs to analog outputs ============================
+webwrite(baseURL + "ext/obank/2/ch/0/src", 'json={"value":"16:0"}'); % A: Caregiver
+webwrite(baseURL + "ext/obank/2/ch/1/src", 'json={"value":"16:0"}'); %
+webwrite(baseURL + "ext/obank/3/ch/0/src", 'json={"value":"16:1"}'); % B: Waver
+webwrite(baseURL + "ext/obank/3/ch/1/src", 'json={"value":"16:1"}'); %
+webwrite(baseURL + "ext/obank/4/ch/0/src", 'json={"value":"16:2"}'); % C: Subject
+webwrite(baseURL + "ext/obank/4/ch/1/src", 'json={"value":"16:2"}'); %
+webwrite(baseURL + "ext/obank/5/ch/0/src", 'json={"value":"16:3"}'); % D: Tester
+webwrite(baseURL + "ext/obank/5/ch/1/src", 'json={"value":"16:3"}'); %
+
+%% === Set mix ============================================================
+% --- Caregiver mixer input ---
+webwrite(baseURL + "mix/chan/0/matrix/aux/0/send", 'json={"value":1}'); % CAREGIVER TO CAREGIVER OUT
+webwrite(baseURL + "mix/chan/0/matrix/aux/1/send", 'json={"value":0}'); % Caregiver to Waver Out
+webwrite(baseURL + "mix/chan/0/matrix/aux/2/send", 'json={"value":0}'); % Caregiver to Participant Out
+webwrite(baseURL + "mix/chan/0/matrix/aux/3/send", 'json={"value":0}'); % Caregiver to Tester Out
+
+% --- WaverStim mixer input ---
+webwrite(baseURL + "mix/chan/1/matrix/aux/0/send", 'json={"value":0}'); % WaverStim to Caregiver Out
+webwrite(baseURL + "mix/chan/1/matrix/aux/1/send", 'json={"value":1}'); % WAVERSTIM TO WAVER OUT
+webwrite(baseURL + "mix/chan/1/matrix/aux/2/send", 'json={"value":0}'); % WaverStim to Participant Out
+webwrite(baseURL + "mix/chan/1/matrix/aux/3/send", 'json={"value":0}'); % WaverStim to Tester Out
+
+% --- Talkback mixer input ---
+webwrite(baseURL + "mix/chan/2/matrix/aux/0/send", 'json={"value":0}'); % Talkback to Caregiver Out
+webwrite(baseURL + "mix/chan/2/matrix/aux/1/send", 'json={"value":1}'); % TALKBACK TO WAVER OUT
+webwrite(baseURL + "mix/chan/2/matrix/aux/2/send", 'json={"value":0}'); % Talkback to Participant Out
+webwrite(baseURL + "mix/chan/2/matrix/aux/3/send", 'json={"value":0}'); % Talkback to Tester Out
+
+% --- WaverTTS mixer input ---
+webwrite(baseURL + "mix/chan/3/matrix/aux/0/send", 'json={"value":0}'); % WaverTTS to Caregiver Out
+webwrite(baseURL + "mix/chan/3/matrix/aux/1/send", 'json={"value":1}'); % WAVERTTS TO WAVER OUT
+webwrite(baseURL + "mix/chan/3/matrix/aux/2/send", 'json={"value":0}'); % WaverTTS to Participant Out
+webwrite(baseURL + "mix/chan/3/matrix/aux/3/send", 'json={"value":0}'); % WaverTTS to Tester Out
+
+% --- (Subject) Stimulus mixer input
+webwrite(baseURL + "mix/chan/4/matrix/aux/0/send", 'json={"value":0}'); % Stimulus to Caregiver Out
+webwrite(baseURL + "mix/chan/4/matrix/aux/1/send", 'json={"value":0}'); % Stimulus to Waver Out
+webwrite(baseURL + "mix/chan/4/matrix/aux/2/send", 'json={"value":1}'); % STIMULUS TO PARTICIPANT OUT
+webwrite(baseURL + "mix/chan/4/matrix/aux/3/send", 'json={"value":0}'); % Stimulus to Tester Out
+
+% --- (Subject) Video mixer input
+webwrite(baseURL + "mix/chan/5/matrix/aux/0/send", 'json={"value":0}'); % Video to Caregiver Out
+webwrite(baseURL + "mix/chan/5/matrix/aux/1/send", 'json={"value":0}'); % Video to Waver Out
+webwrite(baseURL + "mix/chan/5/matrix/aux/2/send", 'json={"value":1}'); % VIDEO TO PARTICIPANT OUT
+webwrite(baseURL + "mix/chan/5/matrix/aux/3/send", 'json={"value":0}'); % Video to Tester Out
+
+% --- Booth mixer input ---
+webwrite(baseURL + "mix/chan/6/matrix/aux/0/send", 'json={"value":0}'); % Booth to Caregiver Out
+webwrite(baseURL + "mix/chan/6/matrix/aux/1/send", 'json={"value":0}'); % Booth to Waver Out
+webwrite(baseURL + "mix/chan/6/matrix/aux/2/send", 'json={"value":0}'); % Booth to Participant Out
+webwrite(baseURL + "mix/chan/6/matrix/aux/3/send", 'json={"value":1}'); % BOOTH TO TESTER OUT
+
+
+
+

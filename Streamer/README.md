@@ -3,6 +3,10 @@
 Stage 5 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_Design.md`
 (delivered separately) for the full architecture and rationale.
 
+**Current channel map (as of 2026-08-22 — see that section below for the full redesign):**
+channels 0-1 zero (video player's own audio), 2 Caregiver, 3 Subject, 4 TTS, 5 Beacon/Alert, 6
+Tester mic, 7 Booth mic. Waver is no longer a software channel — see below.
+
 ## What's here
 
 - **`src/OppStreamer.Core`** — the hardware-independent playback logic: `StimulusStore`,
@@ -13,14 +17,15 @@ Stage 5 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_
   boundary-latch mechanism remains the central bet of the whole redesign — that Trigger, TrainTest,
   the live training-stimulus swap, and now the click-free `Stop()` (see below) can all be handled
   by one generalized mechanism instead of hand-wired per feature — and it's fully built and tested.
-- **`test/OppStreamer.Core.Tests`** — 38 tests, all passing: the original 8 exercising the
-  boundary-latch mechanism, 7 for `DriftCompensatedRingBuffer`, 9 for `TtsPlayer` plus 1 confirming
-  `StreamerEngine.SendTts`/`RenderTts` are wired through, 5 for the click-free `Stop()` mechanism
-  (`StopBoundaryTests.cs` — silence never cuts a loop mid-pass, lands on all three participants
-  together exactly at the boundary, the wait signal fires once per request), and 8 for
-  `WaveformMonitor` (`WaveformMonitorTests.cs` — bucket commit timing, multi-bucket-in-one-call,
-  history ramping from 0 up to its cap then wrapping oldest-first, per-channel independence,
-  argument validation).
+- **`test/OppStreamer.Core.Tests`** — 56 tests, all passing: the boundary-latch mechanism (including
+  the 2026-08-22 Background/Signal reshape — see that section below), 7 for
+  `DriftCompensatedRingBuffer`, 9 for `TtsPlayer` plus 1 confirming `StreamerEngine.SendTts`/
+  `RenderTts` are wired through, 5 for the click-free `Stop()` mechanism (`StopBoundaryTests.cs` —
+  silence never cuts a loop mid-pass, lands on both participants together exactly at the boundary,
+  the wait signal fires once per request), 8 for `WaveformMonitor` (`WaveformMonitorTests.cs` —
+  bucket commit timing, multi-bucket-in-one-call, history ramping from 0 up to its cap then
+  wrapping oldest-first, per-channel independence, argument validation), 7 for `WaitForLatch`, and
+  8 for the new Beacon/Alert feature (`BeaconTests.cs` — see the 2026-08-22 section below).
 - **`src/OppStreamer.Hardware`** — `StreamerSampleProvider` (feeds `StreamerEngine`'s and the mic
   bridges' output into NAudio as plain float, and now also feeds `WaveformMonitor` — see
   "DiagnosticsView" below), `MicBridge` (wraps NAudio `WasapiCapture`, one per mic — see "Mic
@@ -41,6 +46,149 @@ Stage 5 of the .NET/NAudio rewrite of the OPP audio streamer. See `OPP_Streamer_
   "DiagnosticsView" below for why it's a separate class). References only `OppStreamer.Core`, not
   `OppStreamer.Hardware` — it's generic over whatever channels the `WaveformMonitor` it's given
   reports, no hardcoded channel list.
+
+## 2026-08-22: Waver removed, stimulus model reframed around Background/Signal, Beacon/Alert added
+
+You asked to step back and revisit the stimulus model before adding a new feature, and the review
+found a real simplification: the "four buffers per mode" shape (Caregiver, Waver, Subject
+Background, Subject Signal) had a redundancy baked in from the start — in practice, Caregiver and
+Waver were always set to the exact same content as whatever Subject's current Signal buffer held.
+That's not a coincidence of how OPP happens to use the API; it's what the two participants are
+*supposed* to hear, always. So this stage collapses the model down to what actually varies:
+
+- **There are only two signals per mode that matter: Background (masker alone) and Signal (masker
+  + probe).** Not four buffers, not per-participant — two, shared.
+- **Caregiver always hears the current mode's Signal buffer.** No buffer of its own anymore, no
+  separate `SetSignal(Participant.Caregiver, ...)` call — it's simply "whatever Signal currently
+  is," continuously, regardless of what Subject is doing.
+- **Subject hears Background until a trial's Signal window opens, then Signal — the same Signal
+  buffer Caregiver is already playing.** This part is unchanged behavior, just resolved against
+  the shared Background/Signal pair instead of Subject-private buffers.
+- **Waver is gone from the software entirely.** Its old job — mirroring Caregiver's audio in Test
+  mode, Subject's audio in Training mode — is now done by the MOTU's own hardware mixer, tapping
+  whichever of Caregiver's or Subject's *physical* output channel the current mode calls for,
+  directly at the mixer. That's a strictly better answer than resynthesizing a copy in software:
+  zero desync risk (it's the identical physical signal, not a second copy that could ever drift or
+  land on a different loop boundary), and one less thing for this codebase to own. You'll need to
+  wire that routing up on the MOTU's mixer — Test mode taps Caregiver's channel (2), Training mode
+  taps Subject's channel (3) — matching whichever mode's currently selected. You mentioned not
+  having considered the mode-switch timing implication (the mixer's routing change and the
+  streamer's `TrainTest()` boundary aren't inherently synchronized) but don't expect it to be an
+  issue in practice; flagging again here in case it's worth a quick check once it's wired up.
+
+**New feature, same stage: Beacon/Alert (channel 5).** The PI wants a distinct sound played once
+when a trial is initiated, to give a clearer cue for when a subject's reaction might follow — the
+obligatory pre-probe lag stays (still good for minimizing observer bias), this just makes trial
+*onset* less ambiguous to a human watching. Two-step configuration, per your answer: load the clip
+once (`LoadBeaconSound`, typically at startup) and toggle whether it's actually used
+(`SetBeaconEnabled`) independently, changeable at any time. When enabled and loaded, it plays
+**exactly once per trial**, at the same loop boundary the trial's Signal window latches in —
+**regardless of whether that trial turns out to contain a probe** (the PI wants to know a trial
+started, not that it has a probe), and never again for the rest of that trial's configured reps
+(`SetNumReps`). Per your call, overlap with a long-running Beacon clip isn't handled as an edge
+case — the assumption is it's always short enough not to run into the next trial.
+
+**New 8-channel MOTU map**, replacing the old 0-1 silence / 2 Caregiver / 3 Waver / 4 Subject / 5
+TTS / 6 Tester mic / 7 Booth mic layout:
+
+| Channel | Old map      | New map (2026-08-22)     |
+|---------|--------------|---------------------------|
+| 0-1     | silence      | zero (video player's own audio) |
+| 2       | Caregiver    | Caregiver (Signal)        |
+| 3       | Waver        | Subject                   |
+| 4       | Subject      | TTS                       |
+| 5       | TTS          | **Beacon/Alert (new)**    |
+| 6       | Tester mic   | Tester mic (unchanged)    |
+| 7       | Booth mic    | Booth mic (unchanged)     |
+
+**`DiagnosticsView` needed no code changes at all for this.** It was already written generic over
+whatever channel names `WaveformMonitor` reports (see "DiagnosticsView" below) — it never hardcoded
+the old six-channel list. `MonitoredChannel.Names` (Hardware) is now `["Caregiver", "Subject",
+"TTS", "Beacon", "Tester Mic", "Booth Mic"]` — same six-row plot, correctly relabeled, purely by
+updating that one array.
+
+**Breaking changes to the MATLAB-facing surface — you'll need to update OPP's call sites:**
+
+- `SetSignal(participant, mode, signal, isSubjectProbe)` → **two** methods, neither taking a
+  participant: `SetBackground(mode, signal)` and `SetSignal(mode, signal)`. Where OPP used to call
+  `SetSignal` four times per update (Caregiver, Waver, Subject Background, Subject Signal), it now
+  needs exactly two calls — `SetBackground(mode, background)` and `SetSignal(mode, signal)` — or
+  one atomic `SetStimulusSet(mode, background, signal)` call instead of both.
+- `SetTrainer(participant, signal, isSubjectProbe)` is gone. "Set the Training buffer regardless
+  of current mode" is now just `SetBackground("Training", ...)` / `SetSignal("Training", ...)` —
+  the explicit mode argument already does what `SetTrainer` used to do, so a separate method adds
+  nothing.
+- `SetStimulusSet(mode, caregiver, waver, subjectBackground, subjectSignal)` (4 buffers) →
+  `SetStimulusSet(mode, background, signal)` (2 buffers). `SetTrainingStimulusSet` is now a
+  2-buffer alias the same way (was 4).
+- New: `LoadBeaconSound(double[] signal)`, `SetBeaconEnabled(bool enabled)`, and a read-only
+  `IsBeaconEnabled` for diagnostics — see above.
+- Unaffected: `SetConfig`, `SetNumReps`, `TrainTest`, `Trigger`, `SendTTS`, `WaitForLatch`,
+  `IsTrialActive`, `SetDiagnosticsVisible`, everything lifecycle-related (`Initialize`/`Close`/
+  `Start`/`Stop`), and device enumeration.
+
+**Also removed as dead code:** `StreamerWaveProvider.cs` (an old `IWaveProvider`-based alternative
+to `StreamerSampleProvider` from early in the project, self-documented as superseded once
+TTS/mic-bridge integration landed — confirmed neither `AsioStreamerOutput` nor
+`WasapiStreamerOutput` ever referenced it). Deleted from this sandbox's copy; **you'll need to
+delete it from your own repo too**, since this session only had write access to its own working
+copy, synced from a zip you provided partway through this stage — see the note at the very end of
+this section. `test/OppStreamer.DevShell` — a project only present in your real repo, not
+previously known to this session — was left untouched per your note that it's a throwaway
+early-development shell, not something this stage's changes need to account for.
+
+**What changed in each project, mechanically:**
+
+- **`Participant` (Core)** — down to `{ Caregiver, Subject }`, `Waver` removed.
+- **`StimulusStore` (Core)** — rewritten around two `Dictionary<OperatingMode, float[]>` fields
+  (`_background`, `_signal`) instead of the old four-buffer-per-mode shape.
+  `SetBackground(mode, data)` / `SetSignal(mode, data)` replace `SetContinuousStimulus`/
+  `SetSubjectStimulus`; `SetStimulusSet(mode, background, signal)` is the atomic 2-buffer version
+  (same torn-update protection as before, just fewer buffers to tear). `Advance()` now fills two
+  output spans (`caregiverOut`, `subjectOut`) instead of three.
+- **`PendingChangeQueue` (Core)** — two fields (`_caregiver`, `_subject`) instead of three.
+- **`TrialStateMachine` (Core)** — gained an optional `onTrialStart` callback, invoked exactly once
+  per trial at the same boundary `TrialActiveWindowOpen` flips true — this is what
+  `StreamerEngine` wires the Beacon into, rather than duplicating trial-start detection.
+- **`StreamerEngine` (Core)** — `RenderFrame` now takes two output spans; `SetSignal`/
+  `SetBackground`/`SetStimulusSet`/`SetTrainingStimulusSet` are mode-scoped (no participant
+  parameter); new `SetBeaconSound`, `SetBeaconEnabled`, `BeaconEnabled`, `RenderBeacon` — the
+  Beacon reuses `TtsPlayer`'s exact one-shot FIFO shape (a second private instance), just enqueued
+  from a different trigger (trial start) instead of an explicit `SendTts`-style call.
+- **`ConfigApi`** — `SetBackground`/`SetSignal`/`SetStimulusSet`/`SetTrainingStimulusSet` reshaped
+  per the breaking-change list above; `SetTrainer` and `ParseParticipant` removed entirely; new
+  `LoadBeaconSound`/`SetBeaconEnabled`/`IsBeaconEnabled`.
+- **`StreamerSampleProvider` (Hardware)** — new channel map (table above); `MonitoredChannel`
+  shrank from `{Caregiver, Waver, Subject, Tts, TesterMic, BoothMic}` to `{Caregiver, Subject, Tts,
+  Beacon, TesterMic, BoothMic}` — same count (six), Waver's slot became Beacon's; reads
+  `_engine.RenderBeacon(...)` for the new channel, same pattern as TTS.
+- **`AsioStreamerOutput`/`WasapiStreamerOutput`** — no functional changes; they already construct
+  `StreamerSampleProvider` generically and were never aware of the channel map's specifics.
+
+**Verification.** `OppStreamer.Core`/`OppStreamer.Core.Tests` build and run cleanly (same sandbox
+constraint as always — no network access to the .NET Framework reference-assembly package, so only
+the `net8.0` side of the multi-targeted build runs here; that side is the one exercised by the test
+suite either way). **56/56 tests pass** — the original 47 minus the Waver-specific assertions they
+no longer needed, plus 8 new Beacon tests (`BeaconTests.cs`: disabled stays silent, enabled-with-no-
+sound stays silent, fires exactly at the trial-start boundary, fires for a no-probe trial too,
+fires only once across a multi-rep trial, disabling after load prevents the next trial's fire,
+playback is independent of the loop-boundary latch same as TTS, `SetBeaconSound(null)` throws) plus
+1 new test making the "Caregiver always plays Signal" invariant explicit. `ConfigApi.cs` still
+can't build directly in this sandbox (same `NU1100`/NAudio-KLib-WinForms constraint as always — see
+"What's verified" above) — verified instead through the fake-hardware harness
+(`/tmp/configapi-check`), updated for the same redesign and now at **45/45 passing**, including two
+new Beacon scenarios routed all the way through the real `ConfigApi.cs` (not just Core directly):
+fires once at a trial-start boundary for a no-probe trial, and stays silent when never enabled.
+
+**A note on how this stage's sync worked, for your own reference:** partway through this stage you
+shared your real repo as a zip (since the device-bridge connection to your machine wasn't reachable
+from this session — a laptop/desktop mismatch, not a bug in this code) so this session could work
+from your actual current files rather than its own possibly-stale copy. That sync is what this
+section's changes were built on top of. Two things fell out of that you should double check made it
+back into your real, working copy: the `StreamerWaveProvider.cs` deletion mentioned above (this
+session can only delete its own copy), and everything summarized in the breaking-changes list —
+your MATLAB call sites for `SetSignal`/`SetTrainer`/`SetStimulusSet`/`SetTrainingStimulusSet` will
+need updating to match the new two-buffer, no-participant shape before this build is wired up.
 
 ## What's verified, and what isn't
 
@@ -84,11 +232,12 @@ a property of the sandbox, not something you'll hit normally). Practical effect:
   fake `IStreamerAudioOutput`/`StreamerAudioOutputFactory` stand-ins (same names/signatures as the
   real Hardware types, swapped in instead of referencing the real Hardware project), and run through
   27 scenarios — including reaching into the private `StreamerEngine` field via reflection to
-  confirm things like "does `SetTrainer("Subject", ..., isSubjectProbe: true)` actually land on the
-  Signal buffer, not Background" rather than trusting the one-line delegation by eye. Now 35
-  scenarios as of this stage (see below). What's NOT covered by this: real MATLAB→`NET.addAssembly`
-  marshaling of these exact types (double arrays, nullable strings, etc.) and, obviously, real
-  device I/O — both need your machine.
+  confirm things like "does `SetSignal`/`SetBackground` actually land on the right buffer" rather
+  than trusting the one-line delegation by eye. **45 scenarios as of the 2026-08-22 Background/
+  Signal-and-Beacon stage** (see that section near the top of this file), including dedicated Beacon
+  scenarios routed through the real `ConfigApi.cs`. What's NOT covered by this: real
+  MATLAB→`NET.addAssembly` marshaling of these exact types (double arrays, nullable strings, etc.)
+  and, obviously, real device I/O — both need your machine.
 - **`OppStreamer.Diagnostics` (new this stage) splits cleanly into a verified half and an
   unverified half.** `WaveformMonitor` (Core — the actual decimation/history logic DiagnosticsView
   plots) has zero UI dependency at all, so it's genuinely, fully unit tested (8 tests, see above) —
@@ -242,12 +391,17 @@ behind it).
 
 `ConfigApi` (new project, `OppStreamer.ConfigApi`) is the one class OPP actually calls via
 `NET.addAssembly` — everything built in Stages 1–3 (`StreamerEngine`, `IStreamerAudioOutput`,
-`MicBridge`, `TtsPlayer`) sits behind it. It mirrors the method-name list design doc §5.8 specifies
-as unchanged (`Initialize`, `Close`, `IsOpen`, `EnumerateMicrophones`, `EnumerateOutputDevices`,
-`IsMicDeviceValid`, `IsOutputDeviceValid`, `SetConfig`, `SetNumReps`, `SetSignal`, `SetTrainer`,
-`TrainTest`, `Start`, `Stop`, `Trigger`) plus the new additions beyond it (`SetTrainingStimulusSet`,
-`SendTTS`, `WaitForLatch`, `SetDiagnosticsVisible`, `SetStimulusSet`, `IsTrialActive` — each
-explained further down, where and why it was added).
+`MicBridge`, `TtsPlayer`) sits behind it. It started from the method-name list design doc §5.8
+specifies as unchanged (`Initialize`, `Close`, `IsOpen`, `EnumerateMicrophones`,
+`EnumerateOutputDevices`, `IsMicDeviceValid`, `IsOutputDeviceValid`, `SetConfig`, `SetNumReps`,
+`SetSignal`, `SetTrainer`, `TrainTest`, `Start`, `Stop`, `Trigger`) plus the additions beyond it
+(`SetTrainingStimulusSet`, `SendTTS`, `WaitForLatch`, `SetDiagnosticsVisible`, `SetStimulusSet`,
+`IsTrialActive` — each explained further down, where and why it was added) — **note that
+`SetSignal`/`SetTrainer`'s original shape and `SetTrainingStimulusSet`/`SetStimulusSet`'s original
+4-buffer arity are superseded by the 2026-08-22 Background/Signal redesign at the top of this file;
+the bullets directly below describe the *original* (now historical) shape for context, but the
+2026-08-22 section is the current, authoritative one.** New in that same stage:
+`LoadBeaconSound`/`SetBeaconEnabled`/`IsBeaconEnabled` for the Beacon/Alert feature.
 
 **Please read this before wiring it up to real MATLAB code.** §5.8 gives method *names* to mirror,
 not full signatures — the original LabVIEW-compiled assembly wasn't available to inspect while
@@ -536,8 +690,10 @@ public bool IsTrialActive => _engine.TrialActiveWindowOpen;
 ## DiagnosticsView
 
 Design doc §5.7, build plan item 5: a window, owned by the streamer process, with a running/
-stopped indicator and a stacked real-time plot of the six content channels (Caregiver, Waver,
-Subject, TTS, Tester Mic, Booth Mic — channels 0-1 are reserved/silent, not worth plotting).
+stopped indicator and a stacked real-time plot of the six content channels — as of 2026-08-22:
+Caregiver, Subject, TTS, Beacon, Tester Mic, Booth Mic (channels 0-1 are reserved/silent, not worth
+plotting; Waver isn't a software channel anymore — see that section above). This class needed zero
+code changes for that relabeling, by design — see below.
 
 **Architecture, in three pieces:**
 
@@ -801,6 +957,17 @@ Per the design doc's staged build plan:
   "DiagnosticsView" above). Still worth a look on your next run: the collapsed/expanded toggle
   sizes itself sensibly on your actual display/DPI settings, and the envelope itself looks sane
   (not flipped, scaled, or empty) once real audio is flowing through it.
+- **Not yet confirmed on real hardware: the 2026-08-22 Background/Signal redesign and Beacon
+  feature.** Everything in that section is verified in-sandbox (Core tests, fake-hardware harness)
+  but has never run against the actual MOTU/ASIO path or a real MATLAB call site. Worth checking
+  specifically: the new 8-channel map is actually wired correctly end to end (Caregiver on 2,
+  Subject on 3, TTS on 4, Beacon on 5 — shifted from the old map, easy to mix up if anything on the
+  MOTU side still assumes the old layout); the Beacon is audible and timed the way you expect once
+  a real trial triggers; and the MOTU hardware-mixer routing for what used to be Waver (Caregiver's
+  channel in Test mode, Subject's channel in Training mode) behaves the way you want across a live
+  `TrainTest()` switch. Also: your MATLAB call sites need updating for the breaking `SetSignal`/
+  `SetTrainer`/`SetStimulusSet`/`SetTrainingStimulusSet` changes (see that section) before any of
+  this can be exercised for real.
 
 ## A design decision worth double-checking
 

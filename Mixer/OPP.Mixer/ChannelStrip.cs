@@ -42,7 +42,7 @@ namespace OPP.Mixer
         public void SetLevelSilently(float level)
         {
             _setSilently = true;
-            trackBar.Value = (int)level;
+            trackBar.Value = float.IsNegativeInfinity(level) ? trackBar.Minimum : (int)level;
             numericBox.FloatValue = level;
             _setSilently = false;
         }

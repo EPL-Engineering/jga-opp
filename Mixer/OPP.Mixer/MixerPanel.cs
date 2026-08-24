@@ -31,11 +31,13 @@ namespace OPP.Mixer
             ChannelStrips.Clear();
             ChannelStrips.Add(caregiverStrip);
             ChannelStrips.Add(waverStimStrip);
+            ChannelStrips.Add(waverBeaconStrip);
             ChannelStrips.Add(talkbackStrip);
             ChannelStrips.Add(ttsStrip);
             ChannelStrips.Add(subjectStimStrip);
             ChannelStrips.Add(videoStrip);
             ChannelStrips.Add(testerStimStrip);
+            ChannelStrips.Add(testerBeaconStrip);
             ChannelStrips.Add(testerStrip);
             ChannelStrips.Add(testerTtsStrip);
         }

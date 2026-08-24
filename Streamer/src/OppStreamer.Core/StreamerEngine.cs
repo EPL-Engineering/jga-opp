@@ -5,7 +5,7 @@ namespace OppStreamer.Core;
 
 /// <summary>
 /// Composition root for the hardware-independent "brain" of the streamer: everything that
-/// decides what Caregiver/Waver/Subject should be playing, moment to moment, with no dependency
+/// decides what Caregiver/Subject should be playing, moment to moment, with no dependency
 /// on NAudio, ASIO, or any real audio device. A later stage wires this up to a real
 /// <c>MotuOutputEngine</c> (NAudio AsioOut) that calls <see cref="RenderFrame"/> from its audio
 /// callback; for testing (see the test project) a synthetic driver calls it directly.
@@ -21,20 +21,30 @@ public sealed class StreamerEngine
     private readonly TrialStateMachine _trial;
     private readonly TtsPlayer _tts = new();
 
+    // Channel 5 — Beacon/Alert (added 2026-08-22). Reuses TtsPlayer's exact FIFO/one-shot playback
+    // shape: presynthesized audio, no loop-boundary latch, drains as fast as the render callback
+    // asks, silence once dry. The only thing new here is WHEN it gets enqueued — see
+    // FireBeaconIfEnabled and TrialStateMachine's onTrialStart hook.
+    private readonly TtsPlayer _beacon = new();
+    private float[]? _beaconSound;
+    private volatile bool _beaconEnabled;
+
     // Backs RequestStop()/WaitForStopBoundary() — see their doc comments. Starts signaled (no
     // stop is pending, so a wait would return immediately) rather than starting blocked.
     private readonly ManualResetEventSlim _stopBoundaryReached = new(initialState: true);
     private volatile bool _stopPending;
 
-    // Backs WaitForLatch() — see its doc comment. Every mutating call (SetSignal, SetSubjectSignal,
-    // SetTrainer, SetStimulusSet/SetTrainingStimulusSet, TrainTest, Trigger) Reset()s this; the next boundary
+    // Backs WaitForLatch() — see its doc comment. Every mutating call (SetBackground, SetSignal,
+    // SetStimulusSet/SetTrainingStimulusSet, TrainTest, Trigger) Reset()s this; the next boundary
     // crossing after that — whichever mutating call it was — Sets it. Same shape as
     // _stopBoundaryReached/RequestStop above: the reset happens at the "I just changed something"
     // moment, not inside the wait call itself, so a boundary that lands between the mutating call
     // and WaitForLatch() being called still counts (it doesn't get reset out from under itself).
+    // Beacon setters (SetBeaconSound/SetBeaconEnabled) deliberately do NOT reset this — they take
+    // effect immediately, not at a loop boundary, so there's nothing for WaitForLatch to confirm.
     private readonly ManualResetEventSlim _latchReached = new(initialState: false);
 
-    public StreamerEngine() => _trial = new TrialStateMachine(_store);
+    public StreamerEngine() => _trial = new TrialStateMachine(_store, onTrialStart: FireBeaconIfEnabled);
 
     /// <summary>True while a trial's trial-active-window is open.</summary>
     public bool TrialActiveWindowOpen => _trial.TrialActiveWindowOpen;
@@ -46,46 +56,35 @@ public sealed class StreamerEngine
 
     public void SetNumReps(int numReps) => _trial.SetNumReps(numReps);
 
-    /// <summary>Sets the Caregiver or Waver buffer for a given mode.</summary>
-    public void SetSignal(Participant participant, OperatingMode mode, float[] signal)
+    /// <summary>Sets a mode's Background buffer — what Subject hears until a trial's Signal window is active.</summary>
+    public void SetBackground(OperatingMode mode, float[] signal)
     {
-        if (participant == Participant.Subject)
-            throw new ArgumentException("Use SetSubjectSignal for Subject — it has Background/Signal buffers, not one.", nameof(participant));
         _latchReached.Reset();
-        _store.SetContinuousStimulus(participant, mode, signal);
+        _store.SetBackground(mode, signal);
     }
 
-    /// <summary>Sets one of the Subject's four buffers (Background/Signal x Test/Training).</summary>
-    public void SetSubjectSignal(OperatingMode mode, bool isSignal, float[] signal)
+    /// <summary>Sets a mode's Signal buffer — what Caregiver always hears, and what Subject hears while a trial's Signal window is active.</summary>
+    public void SetSignal(OperatingMode mode, float[] signal)
     {
         _latchReached.Reset();
-        _store.SetSubjectStimulus(mode, isSignal, signal);
-    }
-
-    /// <summary>Sets a participant's Training buffer, regardless of which mode is currently active — matches the original SetTrainer semantics.</summary>
-    public void SetTrainer(Participant participant, float[] signal)
-    {
-        if (participant == Participant.Subject)
-            throw new ArgumentException("Use SetSubjectSignal(OperatingMode.Training, ...) for Subject.", nameof(participant));
-        _latchReached.Reset();
-        _store.SetContinuousStimulus(participant, OperatingMode.Training, signal);
+        _store.SetSignal(mode, signal);
     }
 
     /// <summary>
-    /// Atomically updates all four of a mode's buffers (Caregiver, Waver, Subject Background,
-    /// Subject Signal) together, guaranteed to land on the same loop boundary — see
-    /// <see cref="StimulusStore.SetStimulusSet"/> for why this matters versus calling
-    /// <see cref="SetSignal"/>/<see cref="SetSubjectSignal"/> one at a time for the same group.
+    /// Atomically updates both of a mode's buffers (Background, Signal) together, guaranteed to
+    /// land on the same loop boundary — see <see cref="StimulusStore.SetStimulusSet"/> for why this
+    /// matters versus calling <see cref="SetBackground"/>/<see cref="SetSignal"/> one at a time for
+    /// the same mode.
     /// </summary>
-    public void SetStimulusSet(OperatingMode mode, float[] caregiver, float[] waver, float[] subjectBackground, float[] subjectSignal)
+    public void SetStimulusSet(OperatingMode mode, float[] background, float[] signal)
     {
         _latchReached.Reset();
-        _store.SetStimulusSet(mode, caregiver, waver, subjectBackground, subjectSignal);
+        _store.SetStimulusSet(mode, background, signal);
     }
 
     /// <summary>Backward-compatible alias for <c>SetStimulusSet(OperatingMode.Training, ...)</c> — the capability this redesign was originally undertaken to support cleanly.</summary>
-    public void SetTrainingStimulusSet(float[] caregiver, float[] waver, float[] subjectBackground, float[] subjectSignal)
-        => SetStimulusSet(OperatingMode.Training, caregiver, waver, subjectBackground, subjectSignal);
+    public void SetTrainingStimulusSet(float[] background, float[] signal)
+        => SetStimulusSet(OperatingMode.Training, background, signal);
 
     /// <summary>Requests a switch between Test and Training mode, applied at the next loop boundary.</summary>
     public void TrainTest(bool isTrainer)
@@ -102,7 +101,41 @@ public sealed class StreamerEngine
     }
 
     /// <summary>
-    /// Requests that Caregiver/Waver/Subject go silent at the next loop boundary rather than being
+    /// Loads the one-shot Beacon/Alert clip (channel 5) — provided once at startup per the
+    /// 2026-08-22 spec, though nothing here prevents reloading it later if that's ever useful. Takes
+    /// effect immediately (no loop-boundary latch — like <see cref="SendTts"/>, this is a FIFO
+    /// one-shot player, not part of the Caregiver/Subject shared-cursor loop) but has no audible
+    /// effect until a trial actually starts AND <see cref="SetBeaconEnabled"/> is on — see
+    /// <see cref="FireBeaconIfEnabled"/>.
+    /// </summary>
+    public void SetBeaconSound(float[] sound) => _beaconSound = sound ?? throw new ArgumentNullException(nameof(sound));
+
+    /// <summary>
+    /// Enables or disables the Beacon/Alert. Changeable at any time, independent of loading the
+    /// sound (design: "two-step — load once at startup, enable can be toggled any time"). Takes
+    /// effect immediately, same as <see cref="SetBeaconSound"/> — not loop-boundary-latched.
+    /// </summary>
+    public void SetBeaconEnabled(bool enabled) => _beaconEnabled = enabled;
+
+    /// <summary>Whether the Beacon/Alert is currently enabled.</summary>
+    public bool BeaconEnabled => _beaconEnabled;
+
+    /// <summary>
+    /// Wired to <see cref="TrialStateMachine"/>'s onTrialStart callback — see
+    /// <see cref="TrialStateMachine"/>'s constructor doc comment for exactly when this fires (once
+    /// per trial, at the boundary the trial latches in, regardless of probe presence). A no-op if
+    /// disabled or no sound has been loaded yet — silently, not an error, since "Beacon not yet
+    /// configured" is a completely normal state during startup before <see cref="SetBeaconSound"/>
+    /// has been called.
+    /// </summary>
+    private void FireBeaconIfEnabled()
+    {
+        if (_beaconEnabled && _beaconSound is not null)
+            _beacon.Enqueue(_beaconSound);
+    }
+
+    /// <summary>
+    /// Requests that Caregiver/Subject go silent at the next loop boundary rather than being
     /// cut off mid-waveform — the click-free half of a graceful Stop() (see
     /// <see cref="StimulusStore.RequestSilence"/>). Call <see cref="WaitForStopBoundary"/>
     /// afterward, from a thread OTHER than the audio thread, to find out once that boundary has
@@ -134,9 +167,10 @@ public sealed class StreamerEngine
 
     /// <summary>
     /// Blocks the CALLING thread — never the audio thread — until at least one loop boundary has
-    /// been crossed SINCE THE MOST RECENT mutating call (SetSignal, SetSubjectSignal, SetTrainer,
-    /// SetTrainingStimulusSet, TrainTest, or Trigger — each Reset()s the underlying signal; see the
-    /// <c>_latchReached</c> field comment), or <paramref name="timeout"/> elapses first.
+    /// been crossed SINCE THE MOST RECENT mutating call (SetBackground, SetSignal,
+    /// SetStimulusSet/SetTrainingStimulusSet, TrainTest, or Trigger — each Reset()s the underlying
+    /// signal; see the <c>_latchReached</c> field comment), or <paramref name="timeout"/> elapses
+    /// first.
     ///
     /// This is the general-purpose replacement for the old LabVIEW-era pattern of stopping and
     /// restarting the stream around every stimulus change: because every mutation goes through the
@@ -159,12 +193,12 @@ public sealed class StreamerEngine
     public bool WaitForLatch(TimeSpan timeout) => _latchReached.Wait(timeout);
 
     /// <summary>
-    /// Renders the next <paramref name="count"/> samples for Caregiver/Waver/Subject. Drives the
-    /// shared playback clock and applies any latched changes exactly at loop boundaries.
+    /// Renders the next <paramref name="count"/> samples for Caregiver/Subject. Drives the shared
+    /// playback clock and applies any latched changes exactly at loop boundaries.
     /// </summary>
-    public void RenderFrame(int count, Span<float> caregiverOut, Span<float> waverOut, Span<float> subjectOut)
+    public void RenderFrame(int count, Span<float> caregiverOut, Span<float> subjectOut)
     {
-        int wraps = _store.Advance(count, caregiverOut, waverOut, subjectOut, onBoundary: _trial.OnBoundary);
+        int wraps = _store.Advance(count, caregiverOut, subjectOut, onBoundary: _trial.OnBoundary);
 
         if (wraps > 0)
         {
@@ -184,12 +218,15 @@ public sealed class StreamerEngine
     }
 
     /// <summary>
-    /// Queues presynthesized TTS audio (channel 5) to play after anything already queued or
-    /// playing. Unlike Caregiver/Waver/Subject this has no loop-boundary latch — see
+    /// Queues presynthesized TTS audio (channel 4) to play after anything already queued or
+    /// playing. Unlike Caregiver/Subject this has no loop-boundary latch — see
     /// <see cref="TtsPlayer"/>'s doc comment for why it's a separate, simpler FIFO.
     /// </summary>
     public void SendTts(float[] signal) => _tts.Enqueue(signal);
 
-    /// <summary>Renders the next <paramref name="destination"/>.Length samples of TTS audio (channel 5), silence once the queue runs dry.</summary>
+    /// <summary>Renders the next <paramref name="destination"/>.Length samples of TTS audio (channel 4), silence once the queue runs dry.</summary>
     public void RenderTts(Span<float> destination) => _tts.Read(destination);
+
+    /// <summary>Renders the next <paramref name="destination"/>.Length samples of Beacon/Alert audio (channel 5), silence when nothing's queued (disabled, not yet loaded, or already finished playing).</summary>
+    public void RenderBeacon(Span<float> destination) => _beacon.Read(destination);
 }

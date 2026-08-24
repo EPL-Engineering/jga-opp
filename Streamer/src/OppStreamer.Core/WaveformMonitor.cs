@@ -53,7 +53,7 @@ public sealed class WaveformMonitor
     /// <summary>The fixed history length (in buckets) every channel scrolls through.</summary>
     public int BucketsPerChannel => _bucketsPerChannel;
 
-    /// <param name="channelNames">Display names, in index order — e.g. ["Caregiver", "Waver", ...].</param>
+    /// <param name="channelNames">Display names, in index order — e.g. ["Caregiver", "Subject", ...].</param>
     /// <param name="samplesPerBucket">
     /// How many raw samples get decimated into one (min, max) bucket — e.g. 480 at a 48kHz sample
     /// rate for a 10ms bucket. Smaller = finer time resolution but more buckets needed to cover

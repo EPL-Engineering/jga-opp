@@ -3,17 +3,23 @@ namespace OppStreamer.Core.Tests;
 /// <summary>
 /// Covers <see cref="StreamerEngine.WaitForLatch"/> — the general-purpose "has whatever I just
 /// queued been applied yet" signal that replaces the old LabVIEW-era stop/start-around-every-change
-/// pattern. Every mutating call (SetSignal, SetSubjectSignal, SetTrainer, SetStimulusSet/
-/// SetTrainingStimulusSet, TrainTest, Trigger) resets the underlying signal; the next boundary
-/// crossing after that — from ANY source, not tied to which specific call queued it — sets it. Same
-/// "reset at the request, not at the wait" shape as RequestStop/WaitForStopBoundary, and
-/// deliberately not one-shot: once true, it stays true until the next mutating call resets it.
+/// pattern. Every mutating call (SetBackground, SetSignal, SetStimulusSet/SetTrainingStimulusSet,
+/// TrainTest, Trigger) resets the underlying signal; the next boundary crossing after that — from
+/// ANY source, not tied to which specific call queued it — sets it. Same "reset at the request, not
+/// at the wait" shape as RequestStop/WaitForStopBoundary, and deliberately not one-shot: once true,
+/// it stays true until the next mutating call resets it.
 ///
 /// <see cref="TrainTestBoundaryMapsOntoWaitForLatch"/> covers the concrete case that prompted this
 /// question: OPP's old LabVIEW code polled an "IsTrainer" flag to find out when toggling
 /// Test/Training had actually taken effect at the loop boundary — that flag was doing exactly what
 /// WaitForLatch does here, just LabVIEW-side. TrainTest()/WaitForLatch() together replace it, with
 /// no new API needed.
+///
+/// 2026-08-22: updated for the Background/Signal redesign — two-span RenderFrame, mode-scoped
+/// SetBackground/SetSignal in place of the old per-participant setters. Beacon setters
+/// (SetBeaconSound/SetBeaconEnabled) are deliberately NOT covered here — see StreamerEngine's doc
+/// comment: they take effect immediately, not at a loop boundary, so WaitForLatch has nothing to
+/// confirm for them.
 /// </summary>
 public static class WaitForLatchTests
 {
@@ -23,9 +29,8 @@ public static class WaitForLatchTests
     {
         var engine = new StreamerEngine();
         engine.Reset(loopLen);
-        engine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 1f));
-        engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 2f));
-        engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 3f));
+        engine.SetSignal(OperatingMode.Test, Marker(loopLen, 1f));
+        engine.SetBackground(OperatingMode.Test, Marker(loopLen, 3f));
         return engine;
     }
 
@@ -45,8 +50,8 @@ public static class WaitForLatchTests
         const int loopLen = 6;
         var engine = NewConfiguredEngine(loopLen);
 
-        Span<float> c = stackalloc float[6], w = stackalloc float[6], s = stackalloc float[6];
-        engine.RenderFrame(3, c[..3], w[..3], s[..3]); // partway through a loop, no boundary yet
+        Span<float> c = stackalloc float[6], s = stackalloc float[6];
+        engine.RenderFrame(3, c[..3], s[..3]); // partway through a loop, no boundary yet
 
         Check.True(!engine.WaitForLatch(TimeSpan.Zero), "No boundary has been crossed yet — a zero-timeout wait must report false");
     }
@@ -56,8 +61,8 @@ public static class WaitForLatchTests
         const int loopLen = 6;
         var engine = NewConfiguredEngine(loopLen);
 
-        Span<float> c = stackalloc float[6], w = stackalloc float[6], s = stackalloc float[6];
-        engine.RenderFrame(6, c, w, s); // crosses exactly one boundary
+        Span<float> c = stackalloc float[6], s = stackalloc float[6];
+        engine.RenderFrame(6, c, s); // crosses exactly one boundary
 
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "A boundary was just crossed — a zero-timeout wait must now report true");
     }
@@ -65,18 +70,18 @@ public static class WaitForLatchTests
     private static void AnyMutationsBoundaryCounts()
     {
         // No RequestStop() anywhere in this test — WaitForLatch must not require one. A plain
-        // SetTrainer call, followed by ordinary playback crossing a boundary, is enough.
+        // SetSignal call, followed by ordinary playback crossing a boundary, is enough.
         const int loopLen = 4;
         var engine = NewConfiguredEngine(loopLen);
 
-        Span<float> c = stackalloc float[4], w = stackalloc float[4], s = stackalloc float[4];
-        engine.RenderFrame(4, c, w, s); // establish a normal loop, crosses one boundary
+        Span<float> c = stackalloc float[4], s = stackalloc float[4];
+        engine.RenderFrame(4, c, s); // establish a normal loop, crosses one boundary
 
-        engine.SetTrainer(Participant.Caregiver, Marker(loopLen, 9f)); // the "just queued a change" moment — resets the latch
+        engine.SetSignal(OperatingMode.Training, Marker(loopLen, 9f)); // the "just queued a change" moment — resets the latch
         Check.True(!engine.WaitForLatch(TimeSpan.Zero), "Queuing a change resets the latch — it hasn't applied yet");
 
-        engine.RenderFrame(4, c, w, s); // this call both applies the queued Training buffer AND crosses the boundary
-        Check.True(engine.WaitForLatch(TimeSpan.Zero), "The boundary after SetTrainer should satisfy WaitForLatch, with no RequestStop involved");
+        engine.RenderFrame(4, c, s); // this call both applies (bookkeeping only — Training isn't selected) AND crosses the boundary
+        Check.True(engine.WaitForLatch(TimeSpan.Zero), "The boundary after SetSignal should satisfy WaitForLatch, with no RequestStop involved");
     }
 
     private static void TimesOutWithNothingConfigured()
@@ -95,14 +100,14 @@ public static class WaitForLatchTests
         const int loopLen = 2;
         var engine = NewConfiguredEngine(loopLen);
 
-        Span<float> c = stackalloc float[2], w = stackalloc float[2], s = stackalloc float[2];
-        engine.RenderFrame(2, c, w, s); // crosses the boundary — signal should fire
+        Span<float> c = stackalloc float[2], s = stackalloc float[2];
+        engine.RenderFrame(2, c, s); // crosses the boundary — signal should fire
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "Boundary reached — should report true");
 
         // Further loops, with no new mutating call in between, shouldn't un-signal it — once
         // reached, it stays reached until the next mutating call resets it.
-        engine.RenderFrame(2, c, w, s);
-        engine.RenderFrame(2, c, w, s);
+        engine.RenderFrame(2, c, s);
+        engine.RenderFrame(2, c, s);
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "Should still report true across later, unrelated boundaries");
     }
 
@@ -111,52 +116,49 @@ public static class WaitForLatchTests
         const int loopLen = 3;
         var engine = NewConfiguredEngine(loopLen);
 
-        Span<float> c = stackalloc float[3], w = stackalloc float[3], s = stackalloc float[3];
-        engine.RenderFrame(3, c, w, s); // crosses a boundary
+        Span<float> c = stackalloc float[3], s = stackalloc float[3];
+        engine.RenderFrame(3, c, s); // crosses a boundary
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "First boundary should be observed");
 
         // A fresh mutating call means there's something new to confirm — the latch must go back to
         // "not yet applied" even though an earlier, unrelated change did already latch in.
-        engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 5f));
+        engine.SetSignal(OperatingMode.Test, Marker(loopLen, 5f));
         Check.True(!engine.WaitForLatch(TimeSpan.Zero), "A new mutating call must reset the latch, even though an earlier boundary had already satisfied it");
 
-        engine.RenderFrame(3, c, w, s); // the boundary that actually applies the new SetSignal
+        engine.RenderFrame(3, c, s); // the boundary that actually applies the new SetSignal
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "The boundary after the new mutating call should satisfy WaitForLatch again");
     }
 
     private static void TrainTestBoundaryMapsOntoWaitForLatch()
     {
-        // Mirrors StreamerEngineTests.TrainTestSwitchesAllThreeTogether's setup, but checks
-        // WaitForLatch at each step instead of just the audio content — this is the actual
-        // replacement for OPP's old LabVIEW IsTrainer polling loop.
+        // Mirrors StreamerEngineTests.TrainTestSwitchesBothTogether's setup, but checks WaitForLatch
+        // at each step instead of just the audio content — this is the actual replacement for OPP's
+        // old LabVIEW IsTrainer polling loop.
         const int loopLen = 4;
         var engine = new StreamerEngine();
         engine.Reset(loopLen);
 
-        engine.SetSignal(Participant.Caregiver, OperatingMode.Test, Marker(loopLen, 1f));
-        engine.SetSignal(Participant.Waver, OperatingMode.Test, Marker(loopLen, 2f));
-        engine.SetSubjectSignal(OperatingMode.Test, isSignal: false, Marker(loopLen, 3f));
-        engine.SetTrainer(Participant.Caregiver, Marker(loopLen, 10f));
-        engine.SetTrainer(Participant.Waver, Marker(loopLen, 20f));
-        engine.SetSubjectSignal(OperatingMode.Training, isSignal: false, Marker(loopLen, 30f));
+        engine.SetSignal(OperatingMode.Test, Marker(loopLen, 1f));
+        engine.SetBackground(OperatingMode.Test, Marker(loopLen, 3f));
+        engine.SetSignal(OperatingMode.Training, Marker(loopLen, 10f));
+        engine.SetBackground(OperatingMode.Training, Marker(loopLen, 30f));
 
-        Span<float> c = stackalloc float[4], w = stackalloc float[4], s = stackalloc float[4];
-        engine.RenderFrame(2, c[..2], w[..2], s[..2]); // partway through a Test loop, no wrap yet
+        Span<float> c = stackalloc float[4], s = stackalloc float[4];
+        engine.RenderFrame(2, c[..2], s[..2]); // partway through a Test loop, no wrap yet
 
         engine.TrainTest(isTrainer: true); // the moment OPP's toggle would fire
         Check.True(!engine.WaitForLatch(TimeSpan.Zero), "Requested, not yet applied — must report false immediately after TrainTest()");
 
         // Rest of the in-progress Test loop — must finish on Test, unaffected by the pending switch.
-        engine.RenderFrame(2, c[..2], w[..2], s[..2]);
+        engine.RenderFrame(2, c[..2], s[..2]);
         Check.Equal(Marker(2, 1f), c[..2], "must finish the in-progress loop on Test");
         Check.True(engine.WaitForLatch(TimeSpan.Zero), "The boundary at the end of that call is exactly when Training actually took effect — this is the signal that replaces IsTrainer");
 
         // Next loop: now actually, audibly on Training — confirms WaitForLatch's "true" wasn't a
         // false positive from mere bookkeeping (CurrentMode updates immediately inside TrainTest,
         // well before this boundary — WaitForLatch tracks the AUDIBLE switch, not that bookkeeping).
-        engine.RenderFrame(4, c, w, s);
-        Check.Equal(Marker(4, 10f), c, "Caregiver should now be audibly on Training");
-        Check.Equal(Marker(4, 20f), w, "Waver should now be audibly on Training");
-        Check.Equal(Marker(4, 30f), s, "Subject should now be audibly on Training");
+        engine.RenderFrame(4, c, s);
+        Check.Equal(Marker(4, 10f), c, "Caregiver should now be audibly on Training Signal");
+        Check.Equal(Marker(4, 30f), s, "Subject should now be audibly on Training Background");
     }
 }

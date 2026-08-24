@@ -393,105 +393,111 @@ public sealed class ConfigApi : IDisposable
     }
 
     /// <summary>
-    /// Sets a Caregiver/Waver/Subject stimulus buffer for the given mode.
+    /// Sets a mode's Background buffer — what Subject hears until a trial's Signal window is
+    /// active. There's no participant parameter anymore (see the 2026-08-22 note below): Background
+    /// only ever applies to Subject, so a mode is all that's needed to place it.
     ///
-    /// ASSUMPTION: Core's <see cref="StreamerEngine.SetSignal"/> only covers Caregiver/Waver (it
-    /// throws for Subject — Subject has separate Background/Signal buffers, see
-    /// <see cref="StreamerEngine.SetSubjectSignal"/>), but §5.8 lists just one unchanged
-    /// <c>SetSignal</c> name covering all participants including Subject. Rather than inventing a
-    /// second public method name not in that list, <paramref name="isSubjectProbe"/> — defaulted
-    /// so existing Caregiver/Waver call sites need no change — selects Subject's Signal buffer
-    /// (true) vs. Background buffer (false); it's an error to pass it non-default for Caregiver or
-    /// Waver, since they don't have that distinction. If the real API instead has separate
-    /// SetBackground/SetProbe-style methods for Subject, this is the assumption to correct.
+    /// <b>2026-08-22 — reshaped from the old participant-based SetSignal/SetTrainer pair.</b> The
+    /// old surface took a participant name (Caregiver/Waver/Subject) plus an
+    /// <c>isSubjectProbe</c> flag to disambiguate Subject's two buffers — invented at the time
+    /// because the design doc listed a single unchanged <c>SetSignal</c> name covering every
+    /// participant. Ken's own review of the actual OPP call pattern found the real shape underneath
+    /// was always just two signals per mode (Background, Signal — see
+    /// <see cref="OppStreamer.Core.StimulusStore"/>'s class doc comment for the full reasoning), so
+    /// this surface now matches that directly: <see cref="SetBackground"/>/<see cref="SetSignal"/>
+    /// take a mode and nothing else. <b>This is a breaking change to the MATLAB call sites</b> — OPP
+    /// currently calls something like <c>SetSignal("Caregiver", mode, sig)</c> /
+    /// <c>SetSignal("Waver", mode, sig)</c> / <c>SetSignal("Subject", mode, sig, isSubjectProbe: false/true)</c>
+    /// four times per update; those become exactly two calls, <c>SetBackground(mode, background)</c>
+    /// and <c>SetSignal(mode, signal)</c> (or one <see cref="SetStimulusSet"/> call for both
+    /// atomically) — see the README's 2026-08-22 entry for the full migration note.
     /// </summary>
-    public void SetSignal(string participant, string mode, double[] signal, bool isSubjectProbe = false)
+    public void SetBackground(string mode, double[] signal)
     {
         RequireOpen();
-        var p = ParseParticipant(participant);
         var m = ParseMode(mode);
-        var floatSignal = ToFloat(signal);
-
-        if (p == Participant.Subject)
-        {
-            _engine.SetSubjectSignal(m, isSignal: isSubjectProbe, floatSignal);
-        }
-        else
-        {
-            if (isSubjectProbe)
-                throw new ArgumentException($"isSubjectProbe only applies to participant \"Subject\" (got \"{participant}\").", nameof(isSubjectProbe));
-            _engine.SetSignal(p, m, floatSignal);
-        }
+        _engine.SetBackground(m, ToFloat(signal));
     }
 
     /// <summary>
-    /// Sets a participant's Training buffer, regardless of which mode is currently active.
-    /// Same <paramref name="isSubjectProbe"/> assumption as <see cref="SetSignal"/> above — see its
-    /// doc comment.
+    /// Sets a mode's Signal buffer — what Caregiver always hears, and what Subject hears while a
+    /// trial's Signal window is active. See <see cref="SetBackground"/>'s doc comment for the
+    /// 2026-08-22 reshape this is part of, including the breaking-change migration note.
     /// </summary>
-    public void SetTrainer(string participant, double[] signal, bool isSubjectProbe = false)
+    public void SetSignal(string mode, double[] signal)
     {
         RequireOpen();
-        var p = ParseParticipant(participant);
-        var floatSignal = ToFloat(signal);
-
-        if (p == Participant.Subject)
-        {
-            _engine.SetSubjectSignal(OperatingMode.Training, isSignal: isSubjectProbe, floatSignal);
-        }
-        else
-        {
-            if (isSubjectProbe)
-                throw new ArgumentException($"isSubjectProbe only applies to participant \"Subject\" (got \"{participant}\").", nameof(isSubjectProbe));
-            _engine.SetTrainer(p, floatSignal);
-        }
+        var m = ParseMode(mode);
+        _engine.SetSignal(m, ToFloat(signal));
     }
 
     /// <summary>
-    /// Atomically updates all four of a mode's buffers (Caregiver, Waver, Subject Background,
-    /// Subject Signal) together, guaranteed to land on a single loop boundary rather than being
-    /// staggered across separate calls to <see cref="SetSignal"/>.
+    /// Atomically updates both of a mode's buffers (Background, Signal) together, guaranteed to
+    /// land on a single loop boundary rather than being staggered across separate calls to
+    /// <see cref="SetBackground"/>/<see cref="SetSignal"/>.
     ///
     /// ADDED 2026-08-20, generalizing <see cref="SetTrainingStimulusSet"/> (design doc §5.3, kept
-    /// below as a Training-only alias) to accept either mode. Ken's OPP code was calling
-    /// <see cref="SetSignal"/> once per participant (Caregiver, Waver, Subject Background, Subject
-    /// Signal — four separate calls) to update the currently-selected phase's stimuli. That works
-    /// fine as long as all four calls land before the next boundary, but each call queues
-    /// independently — the audio thread can drain and apply whatever's queued so far at ANY
-    /// boundary, including one that happens to land between two of those calls. Worst case: one
-    /// torn loop pass (part of the group already switched, part still on the old buffers) before
-    /// the rest catches up on the following boundary — narrow and timing-dependent, but a real
-    /// mismatch in what's actually played, not just a bookkeeping glitch. This method closes that
-    /// gap by queuing the whole group as one atomic unit, the same guarantee
-    /// <see cref="SetTrainingStimulusSet"/> already gave Training buffers — see
-    /// <see cref="OppStreamer.Core.StimulusStore.SetStimulusSet"/> for the full mechanism.
+    /// below as a Training-only alias) to accept either mode; reshaped 2026-08-22 from four buffers
+    /// (Caregiver, Waver, Subject Background, Subject Signal) down to these two (Background, Signal)
+    /// — see <see cref="SetBackground"/>'s doc comment for that migration. The original motivation
+    /// is unchanged: calling <see cref="SetBackground"/>/<see cref="SetSignal"/> one at a time for
+    /// the same mode works fine as long as both calls land before the next boundary, but each call
+    /// queues independently — the audio thread can drain and apply whatever's queued so far at ANY
+    /// boundary, including one that happens to land between the two calls. Worst case: one torn
+    /// loop pass (one buffer already switched, the other still old) before the rest catches up on
+    /// the following boundary — narrow and timing-dependent, but a real mismatch in what's actually
+    /// played, not just a bookkeeping glitch. This method closes that gap by queuing both as one
+    /// atomic unit — see <see cref="OppStreamer.Core.StimulusStore.SetStimulusSet"/> for the full
+    /// mechanism.
     /// </summary>
-    public void SetStimulusSet(string mode, double[] caregiver, double[] waver, double[] subjectBackground, double[] subjectSignal)
+    public void SetStimulusSet(string mode, double[] background, double[] signal)
     {
         RequireOpen();
         var m = ParseMode(mode);
-        _engine.SetStimulusSet(m, ToFloat(caregiver), ToFloat(waver), ToFloat(subjectBackground), ToFloat(subjectSignal));
+        _engine.SetStimulusSet(m, ToFloat(background), ToFloat(signal));
     }
 
     /// <summary>
-    /// Atomically updates all four Training buffers together (design doc §5.3) — the entry point
-    /// for the "vary the training masker/probe combination on the fly" feature. Equivalent to
+    /// Atomically updates both Training buffers together (design doc §5.3) — the entry point for
+    /// the "vary the training masker/probe combination on the fly" feature. Equivalent to
     /// <c>SetStimulusSet("Training", ...)</c>; kept as its own method so existing Training-specific
-    /// call sites need no change.
-    ///
-    /// NOTE: §5.3's own early sketch of this method's signature was
-    /// <c>SetTrainingStimulusSet(Dictionary&lt;string, double[]&gt; byParticipant)</c> — that was
-    /// superseded during Core's actual build: <see cref="StreamerEngine.SetTrainingStimulusSet"/>
-    /// (already built, tested, and delivered) takes four positional buffers instead, which is both
-    /// simpler and gives compile-time confidence that all four are always provided together. This
-    /// mirrors that already-built shape rather than reintroducing the dictionary. I've updated the
-    /// design doc's §5.3 text to match.
+    /// call sites need no change beyond the 2026-08-22 four-buffer -&gt; two-buffer reshape (see
+    /// <see cref="SetBackground"/>'s doc comment).
     /// </summary>
-    public void SetTrainingStimulusSet(double[] caregiver, double[] waver, double[] subjectBackground, double[] subjectSignal)
+    public void SetTrainingStimulusSet(double[] background, double[] signal)
     {
         RequireOpen();
-        _engine.SetTrainingStimulusSet(ToFloat(caregiver), ToFloat(waver), ToFloat(subjectBackground), ToFloat(subjectSignal));
+        _engine.SetTrainingStimulusSet(ToFloat(background), ToFloat(signal));
     }
+
+    /// <summary>
+    /// Loads the one-shot Beacon/Alert clip (channel 5) — added 2026-08-22 per the PI's request: a
+    /// sound played once, at the exact loop boundary a trial's Signal window latches in, regardless
+    /// of whether that trial turns out to contain a probe, so the Tester/observer has a clearer cue
+    /// for when to expect a possible reaction. Two-step configuration, per design: load the sound
+    /// once (typically at startup — nothing here prevents reloading it later, but that's the
+    /// intended call pattern) and separately toggle <see cref="SetBeaconEnabled"/> at any time.
+    /// Loading alone has no audible effect until both a sound is loaded AND the Beacon is enabled.
+    /// </summary>
+    public void LoadBeaconSound(double[] signal)
+    {
+        RequireOpen();
+        _engine.SetBeaconSound(ToFloat(signal));
+    }
+
+    /// <summary>
+    /// Enables or disables the Beacon/Alert — changeable at any time, independent of
+    /// <see cref="LoadBeaconSound"/>. Takes effect immediately, not loop-boundary-latched (so
+    /// <see cref="WaitForLatch"/> has nothing to confirm for this call — see its own doc comment).
+    /// </summary>
+    public void SetBeaconEnabled(bool enabled)
+    {
+        RequireOpen();
+        _engine.SetBeaconEnabled(enabled);
+    }
+
+    /// <summary>ADDITION beyond the mirrored surface — whether the Beacon/Alert is currently enabled.</summary>
+    public bool IsBeaconEnabled => _engine.BeaconEnabled;
 
     public void TrainTest(bool isTrainer)
     {
@@ -514,10 +520,12 @@ public sealed class ConfigApi : IDisposable
 
     /// <summary>
     /// ADDITION beyond the mirrored surface — blocks (up to <paramref name="timeoutSeconds"/>)
-    /// until whatever was most recently queued via SetSignal/SetTrainer/SetStimulusSet/
+    /// until whatever was most recently queued via SetBackground/SetSignal/SetStimulusSet/
     /// SetTrainingStimulusSet/TrainTest/Trigger has actually been applied at the next loop
     /// boundary. See
-    /// <see cref="StreamerEngine.WaitForLatch"/> for the full mechanism.
+    /// <see cref="StreamerEngine.WaitForLatch"/> for the full mechanism. Does NOT cover
+    /// <see cref="LoadBeaconSound"/>/<see cref="SetBeaconEnabled"/> — those take effect
+    /// immediately, not at a loop boundary, so there's nothing for this to confirm.
     ///
     /// Added 2026-08-19 specifically to replace the old LabVIEW-era "SetAudioStream" pattern (stop
     /// the stream, set new waveforms, wait for stopped, start again, wait for started, checking for
@@ -533,7 +541,7 @@ public sealed class ConfigApi : IDisposable
     ///
     /// Typical replacement call pattern:
     /// <code>
-    /// configApi.SetStimulusSet(...);   // or SetSignal / SetTrainer / SetTrainingStimulusSet / TrainTest / Trigger
+    /// configApi.SetStimulusSet(...);   // or SetBackground / SetSignal / SetTrainingStimulusSet / TrainTest / Trigger
     /// if (!configApi.WaitForLatch(timeoutSeconds))
     /// {
     ///     // Didn't latch in time — check IsStreaming / LastError. See the caveat below on what
@@ -574,15 +582,6 @@ public sealed class ConfigApi : IDisposable
         var result = new float[signal.Length];
         for (int i = 0; i < signal.Length; i++) result[i] = (float)signal[i];
         return result;
-    }
-
-    private static Participant ParseParticipant(string participant)
-    {
-        if (participant is not null && Enum.TryParse<Participant>(participant, ignoreCase: true, out var result))
-            return result;
-        throw new ArgumentException(
-            $"'{participant}' is not a recognized participant. Valid values: {string.Join(", ", Enum.GetNames(typeof(Participant)))}.",
-            nameof(participant));
     }
 
     private static OperatingMode ParseMode(string mode)

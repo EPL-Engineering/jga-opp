@@ -7,4 +7,5 @@ TtsPlayerTests.Register(runner);
 StopBoundaryTests.Register(runner);
 WaveformMonitorTests.Register(runner);
 WaitForLatchTests.Register(runner);
+BeaconTests.Register(runner);
 return runner.ReportAndGetExitCode();

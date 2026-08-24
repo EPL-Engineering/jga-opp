@@ -12,16 +12,25 @@ namespace OppStreamer.Hardware;
 /// doesn't know or care whether it ends up feeding ASIO or WASAPI, exclusive mode or shared,
 /// float or 16-bit PCM — that's entirely the transport's concern.
 ///
-/// Produces interleaved 8-channel float, matching the MOTU channel map from the design doc:
-/// 0-1 silence, 2 Caregiver, 3 Waver, 4 Subject, 5 TTS, 6 Tester mic, 7 Booth mic.
+/// Produces interleaved 8-channel float, matching the MOTU channel map:
+/// 0-1 zero (video player's own audio), 2 Caregiver, 3 Subject, 4 TTS, 5 Beacon/Alert, 6 Tester
+/// mic, 7 Booth mic.
 ///
-/// All content channels are now wired to real sources: 2/3/4 via StreamerEngine.RenderFrame, 5
-/// (TTS) via StreamerEngine.RenderTts (backed by TtsPlayer — no loop-boundary latch, just a
-/// FIFO), and 6/7 via the two MicBridge instances passed in. The mic bridges are always read
-/// unconditionally, whether or not their underlying device was ever Start()ed: an unstarted (or
-/// not-yet-caught-up) MicBridge's ring buffer just reports a permanent underrun and yields
-/// silence on Read(), so an omitted mic device degrades to a silent channel — no null-checking
-/// needed here. TtsPlayer degrades the same way when nothing's been queued yet.
+/// <b>2026-08-22 — Waver removed from this map entirely; Beacon/Alert added.</b> The channel map
+/// used to be 0-1 silence, 2 Caregiver, 3 Waver, 4 Subject, 5 TTS, 6 Tester mic, 7 Booth mic. Waver
+/// is now handled by the MOTU's own hardware mixer (tapping Caregiver's or Subject's physical
+/// output channel directly, depending on mode) rather than by a software channel here — see
+/// <see cref="Participant"/>'s doc comment. That freed a channel slot; Subject/TTS shifted down by
+/// one (3, 4) and the new Beacon/Alert one-shot (see <see cref="StreamerEngine.RenderBeacon"/>)
+/// takes the freed slot at 5.
+///
+/// All content channels are wired to real sources: 2/3 via StreamerEngine.RenderFrame, 4 (TTS) via
+/// StreamerEngine.RenderTts, 5 (Beacon) via StreamerEngine.RenderBeacon (both backed by TtsPlayer —
+/// no loop-boundary latch, just a FIFO), and 6/7 via the two MicBridge instances passed in. The mic
+/// bridges are always read unconditionally, whether or not their underlying device was ever
+/// Start()ed: an unstarted (or not-yet-caught-up) MicBridge's ring buffer just reports a permanent
+/// underrun and yields silence on Read(), so an omitted mic device degrades to a silent channel —
+/// no null-checking needed here. TtsPlayer/Beacon degrade the same way when nothing's been queued.
 /// </summary>
 /// <summary>
 /// Index order (and matching display names) for <see cref="WaveformMonitor"/>'s compact
@@ -34,15 +43,15 @@ namespace OppStreamer.Hardware;
 /// </summary>
 internal static class MonitoredChannel
 {
-    public const int Caregiver = 0, Waver = 1, Subject = 2, Tts = 3, TesterMic = 4, BoothMic = 5;
+    public const int Caregiver = 0, Subject = 1, Tts = 2, Beacon = 3, TesterMic = 4, BoothMic = 5;
 
-    public static readonly string[] Names = { "Caregiver", "Waver", "Subject", "TTS", "Tester Mic", "Booth Mic" };
+    public static readonly string[] Names = { "Caregiver", "Subject", "TTS", "Beacon", "Tester Mic", "Booth Mic" };
 }
 
 internal sealed class StreamerSampleProvider : ISampleProvider
 {
     private const int ChannelCount = 8;
-    private const int CaregiverChannel = 2, WaverChannel = 3, SubjectChannel = 4;
+    private const int CaregiverChannel = 2, SubjectChannel = 3, TtsChannel = 4, BeaconChannel = 5;
     private const int TesterMicChannel = 6, BoothMicChannel = 7;
 
     private readonly StreamerEngine _engine;
@@ -52,11 +61,11 @@ internal sealed class StreamerSampleProvider : ISampleProvider
 
     // Reused across Read() calls to avoid per-callback allocation on the audio thread.
     private float[] _caregiver = Array.Empty<float>();
-    private float[] _waver = Array.Empty<float>();
     private float[] _subject = Array.Empty<float>();
     private float[] _testerMicFrame = Array.Empty<float>();
     private float[] _boothMicFrame = Array.Empty<float>();
     private float[] _ttsFrame = Array.Empty<float>();
+    private float[] _beaconFrame = Array.Empty<float>();
 
     public StreamerSampleProvider(StreamerEngine engine, int sampleRate, MicBridge testerMic, MicBridge boothMic, WaveformMonitor waveforms)
     {
@@ -86,30 +95,31 @@ internal sealed class StreamerSampleProvider : ISampleProvider
         if (_caregiver.Length < frameCount)
         {
             _caregiver = new float[frameCount];
-            _waver = new float[frameCount];
             _subject = new float[frameCount];
             _testerMicFrame = new float[frameCount];
             _boothMicFrame = new float[frameCount];
             _ttsFrame = new float[frameCount];
+            _beaconFrame = new float[frameCount];
         }
 
-        _engine.RenderFrame(frameCount, _caregiver.AsSpan(0, frameCount), _waver.AsSpan(0, frameCount), _subject.AsSpan(0, frameCount));
+        _engine.RenderFrame(frameCount, _caregiver.AsSpan(0, frameCount), _subject.AsSpan(0, frameCount));
 
         // Independent of RenderFrame's shared-cursor latch mechanism entirely — the mic bridges
         // are always-on passthroughs (design doc §5.5: "no mute/gating logic needed"), not gated by
-        // trial state or loop boundaries. TTS (channel 5) is the same: TtsPlayer has no
-        // loop-boundary latch either, it just drains its FIFO as fast as this callback asks.
+        // trial state or loop boundaries. TTS (channel 4) and Beacon (channel 5) are the same:
+        // neither has a loop-boundary latch, they just drain their FIFO as fast as this callback asks.
         _testerMic.Read(_testerMicFrame.AsSpan(0, frameCount));
         _boothMic.Read(_boothMicFrame.AsSpan(0, frameCount));
         _engine.RenderTts(_ttsFrame.AsSpan(0, frameCount));
+        _engine.RenderBeacon(_beaconFrame.AsSpan(0, frameCount));
 
         // Feeds DiagnosticsView (design doc §5.7's "publishes a decimated snapshot of the frame")
         // — cheap running min/max bucketing, see WaveformMonitor's own doc comment for why this is
         // safe to do unconditionally on the audio thread every callback.
         _waveforms.Accumulate(MonitoredChannel.Caregiver, _caregiver.AsSpan(0, frameCount));
-        _waveforms.Accumulate(MonitoredChannel.Waver, _waver.AsSpan(0, frameCount));
         _waveforms.Accumulate(MonitoredChannel.Subject, _subject.AsSpan(0, frameCount));
         _waveforms.Accumulate(MonitoredChannel.Tts, _ttsFrame.AsSpan(0, frameCount));
+        _waveforms.Accumulate(MonitoredChannel.Beacon, _beaconFrame.AsSpan(0, frameCount));
         _waveforms.Accumulate(MonitoredChannel.TesterMic, _testerMicFrame.AsSpan(0, frameCount));
         _waveforms.Accumulate(MonitoredChannel.BoothMic, _boothMicFrame.AsSpan(0, frameCount));
 
@@ -119,9 +129,9 @@ internal sealed class StreamerSampleProvider : ISampleProvider
             buffer[baseIndex + 0] = 0f; // reserved for the video player's own audio
             buffer[baseIndex + 1] = 0f;
             buffer[baseIndex + CaregiverChannel] = _caregiver[i];
-            buffer[baseIndex + WaverChannel] = _waver[i];
             buffer[baseIndex + SubjectChannel] = _subject[i];
-            buffer[baseIndex + 5] = _ttsFrame[i];
+            buffer[baseIndex + TtsChannel] = _ttsFrame[i];
+            buffer[baseIndex + BeaconChannel] = _beaconFrame[i];
             buffer[baseIndex + TesterMicChannel] = _testerMicFrame[i];
             buffer[baseIndex + BoothMicChannel] = _boothMicFrame[i];
         }

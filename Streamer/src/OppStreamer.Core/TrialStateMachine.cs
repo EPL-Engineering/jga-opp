@@ -12,6 +12,7 @@ namespace OppStreamer.Core
     public sealed class TrialStateMachine
     {
         private readonly StimulusStore _store;
+        private readonly Action? _onTrialStart;
 
         private int _numReps = 1;
         private int _remainingReps;
@@ -19,7 +20,21 @@ namespace OppStreamer.Core
         private bool _pendingContainsProbe;
         private bool _trialActive;
 
-        public TrialStateMachine(StimulusStore store) => _store = store ?? throw new ArgumentNullException(nameof(store));
+        /// <param name="store">Where trial-driven Subject Background/Signal selection changes are queued.</param>
+        /// <param name="onTrialStart">
+        /// Invoked exactly once per trial, at the same boundary the trial actually latches in —
+        /// added 2026-08-22 for the Beacon/Alert feature: the PI wants a sound played once when a
+        /// trial is initiated, regardless of whether that trial contains a probe, and exactly once
+        /// even when <see cref="SetNumReps"/> configures more than one repeat. This is precisely the
+        /// branch below where that's true, so <see cref="StreamerEngine"/> wires its Beacon logic in
+        /// here rather than duplicating trial-start detection elsewhere. Optional — null is a normal,
+        /// supported "no Beacon wiring" configuration, not an error.
+        /// </param>
+        public TrialStateMachine(StimulusStore store, Action? onTrialStart = null)
+        {
+            _store = store ?? throw new ArgumentNullException(nameof(store));
+            _onTrialStart = onTrialStart;
+        }
 
         /// <summary>True while a trial's trial-active-window is open (regardless of whether it contains a probe).</summary>
         public bool TrialActiveWindowOpen { get; private set; }
@@ -78,6 +93,13 @@ namespace OppStreamer.Core
                 TrialActiveWindowOpen = true;
                 _remainingReps = _numReps;
                 _store.RequestSubjectSignal(active: _pendingContainsProbe);
+
+                // Fires exactly here — the boundary where the trial actually latches in — never
+                // again for the rest of this trial's reps (that's handled by the _trialActive
+                // branch above, which never calls this). Regardless of containsProbe, per the
+                // Beacon/Alert spec: the PI wants to know when a trial started, whether or not it
+                // turns out to contain a probe.
+                _onTrialStart?.Invoke();
             }
         }
     }
