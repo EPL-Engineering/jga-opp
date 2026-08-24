@@ -259,7 +259,7 @@ namespace OPP.Mixer
 
         private void ConnectMixerInput(int channelIndex, int source)
         {
-            _motu.Write($"ext/obank/17/ch/{channelIndex}/src", $"3:{source}");
+            _motu.Write($"datastore/ext/obank/17/ch/{channelIndex}/src", $"3:{source}");
         }
     }
 }
