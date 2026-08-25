@@ -121,6 +121,8 @@ namespace OPP.Mixer
             var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" || strip.Title == "Beacon");
             foreach (var strip in stimStrips)
             {
+                var channelIndex = _mixerPanel.ChannelStrips.FindIndex(s => s == strip);
+                WriteMuteValue(channelIndex, mute);
                 strip.MuteAndDisable(mute);
             }
         } 
