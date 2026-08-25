@@ -118,7 +118,7 @@ namespace OPP.Mixer
 
         public void MuteAudioStream(bool mute)
         {
-            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus");
+            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" || strip.Title == "Beacon");
             foreach (var strip in stimStrips)
             {
                 strip.MuteAndDisable(mute);

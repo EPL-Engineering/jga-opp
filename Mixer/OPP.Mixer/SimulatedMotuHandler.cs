@@ -55,8 +55,11 @@ public sealed class SimulatedMotuHandler : HttpMessageHandler
         if (jsonField != null)
         {
             var payload = JObject.Parse(jsonField);
-            if (payload.TryGetValue("value", out var token))
+            if (payload.TryGetValue("value", out var token) &&
+                (token.Type == JTokenType.Integer || token.Type == JTokenType.Float))
+            {
                 _values[path] = token.Value<double>();
+            }
         }
 
         return JsonResponse("{}");
