@@ -19,6 +19,9 @@ webwrite(baseURL + "ext/ibank/16/ch/1/name", 'json={"value":"Waver Out"}');
 webwrite(baseURL + "ext/ibank/16/ch/2/name", 'json={"value":"Participant Out"}');
 webwrite(baseURL + "ext/ibank/16/ch/3/name", 'json={"value":"Tester Out"}');
 
+webwrite(baseURL + "ext/obank/6/ch/0/name", 'json={"value":"AcousticPTC"}');  %
+webwrite(baseURL + "ext/obank/6/ch/1/name", 'json={"value":"AcousticPTC"}');  %
+
 %% === Name mixer inputs ==================================================
 % --- Caregiver ---
 webwrite(baseURL + "ext/obank/17/ch/0/name", 'json={"value":"Caregiver"}');     % In 1
@@ -68,6 +71,8 @@ webwrite(baseURL + "ext/obank/4/ch/0/src", 'json={"value":"16:2"}'); % C: Subjec
 webwrite(baseURL + "ext/obank/4/ch/1/src", 'json={"value":"16:2"}'); %
 webwrite(baseURL + "ext/obank/5/ch/0/src", 'json={"value":"16:3"}'); % D: Tester
 webwrite(baseURL + "ext/obank/5/ch/1/src", 'json={"value":"16:3"}'); %
+webwrite(baseURL + "ext/obank/6/ch/0/src", 'json={"value":"3:0"}');  % E: AcousticPTC Subject
+webwrite(baseURL + "ext/obank/6/ch/1/src", 'json={"value":"3:1"}');  %
 
 %% === Set mix ============================================================
 % --- Caregiver mixer input ---
