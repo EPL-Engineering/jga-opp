@@ -1,7 +1,20 @@
-% EarLAB:
-baseURL = "http://169.254.228.35/datastore/";
-% Children's:
-% baseURL = "http://169.254.158.50/datastore/";
+function configure_motu_monitor8(url)
+
+if nargin > 0
+   if contains(url, 'simulated')
+      return;
+   end
+   
+   if ~startsWith(url, 'http')
+      url = ['http://' url];
+   end
+   baseURL = [url '/datastore/'];
+else
+   % EarLAB:
+   baseURL = "http://169.254.228.35/datastore/";
+   % Children's:
+   % baseURL = "http://169.254.158.50/datastore/";
+end
 
 %% === Name USB inputs ====================================================
 webwrite(baseURL + "ext/ibank/3/ch/0/name", 'json={"value":"Video 1"}');
