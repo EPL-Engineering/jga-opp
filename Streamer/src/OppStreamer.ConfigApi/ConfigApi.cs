@@ -276,6 +276,14 @@ public sealed class ConfigApi : IDisposable
             _engine.Reset(loopLengthSamples);
     }
 
+    public void SetConfig(int loopLengthSamples)
+    {
+        RequireOpen();
+        if (_outputDeviceName is null)
+            throw new InvalidOperationException("Call SetConfig(outputDeviceName, ...) first — no output device configured yet.");
+        SetConfig(_outputDeviceName, loopLengthSamples, _testerMicDeviceName, _boothMicDeviceName);
+    }
+
     // ------------------------------------------------------------------------------------------
     // Start/Stop — device-level lifecycle. Per §6: devices open on Start(), not Initialize(), and
     // stay open across SetConfig calls/phase transitions that don't change device identity.
