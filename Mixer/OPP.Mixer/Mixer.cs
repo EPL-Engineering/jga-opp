@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -125,7 +126,14 @@ namespace OPP.Mixer
                 WriteMuteValue(channelIndex, mute);
                 strip.MuteAndDisable(mute);
             }
-        } 
+        }
+
+        public void EnableSubjectAudioStream(bool enable)
+        {
+            var channelIndex = _mixerPanel.ChannelStrips.FindIndex(strip => strip.Title == "Stimulus" && strip.ChannelId == "ParticipantStim");
+            WriteMuteValue(channelIndex, !enable);
+            _mixerPanel.ChannelStrips[channelIndex].MuteAndDisable(!enable);
+        }
 
         public void ToggleTalkback()
         {

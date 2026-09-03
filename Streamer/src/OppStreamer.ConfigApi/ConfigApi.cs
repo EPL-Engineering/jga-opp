@@ -131,6 +131,8 @@ public sealed class ConfigApi : IDisposable
     /// </summary>
     public bool IsStreaming => _output?.IsRunning ?? false;
 
+    public int LoopLengthSamples => _engine.LoopLengthSamples ?? throw new InvalidOperationException("No loop length configured yet — call SetConfig() first.");
+
     /// <summary>
     /// ADDITION beyond the mirrored surface (§5.8's "unchanged" list has no equivalent) — true while a
     /// trial's trial-active-window is open: from the loop boundary a pending Trigger() takes effect,
