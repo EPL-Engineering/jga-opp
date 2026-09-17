@@ -1,5 +1,11 @@
 ## Changelog
 
+### v1.4.1 (2026-09-17)
+#### Fixed
+- bug initializing manual values in swept masker mode
+
+---
+
 ### v1.4 (2026-08-27)
 #### Changed
 - migrated mixer/streamer from LabVIEW to .NET
