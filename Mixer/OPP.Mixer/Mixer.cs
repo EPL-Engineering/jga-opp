@@ -130,10 +130,12 @@ namespace OPP.Mixer
 
         public void EnableWaverBeacon(bool enable)
         {
+            bool muteWaverBeacon = !enable;
+
             var waverBeaconStrip = _mixerPanel.ChannelStrips.Find(strip => strip.ChannelId == "WaverBeacon");
             var channelIndex = _mixerPanel.ChannelStrips.FindIndex(s => s == waverBeaconStrip);
-            WriteMuteValue(channelIndex, enable);
-            waverBeaconStrip.MuteAndDisable(enable);
+            WriteMuteValue(channelIndex, muteWaverBeacon);
+            waverBeaconStrip.MuteAndDisable(muteWaverBeacon);
         }
 
         public void EnableSubjectAudioStream(bool enable)
