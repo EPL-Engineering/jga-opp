@@ -128,9 +128,9 @@ public sealed class StreamerEngine
     /// configured" is a completely normal state during startup before <see cref="SetBeaconSound"/>
     /// has been called.
     /// </summary>
-    private void FireBeaconIfEnabled()
+    private void FireBeaconIfEnabled(bool hasProbe)
     {
-        if (_beaconEnabled && _beaconSound is not null)
+        if (_beaconEnabled && _beaconSound is not null && hasProbe)
             _beacon.Enqueue(_beaconSound);
     }
 

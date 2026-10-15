@@ -119,13 +119,21 @@ namespace OPP.Mixer
 
         public void MuteAudioStream(bool mute)
         {
-            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" || strip.Title == "Beacon");
+            var stimStrips = _mixerPanel.ChannelStrips.FindAll(strip => strip.Title == "Stimulus" || strip.ChannelId == "TesterBeacon");
             foreach (var strip in stimStrips)
             {
                 var channelIndex = _mixerPanel.ChannelStrips.FindIndex(s => s == strip);
                 WriteMuteValue(channelIndex, mute);
                 strip.MuteAndDisable(mute);
             }
+        }
+
+        public void EnableWaverBeacon(bool enable)
+        {
+            var waverBeaconStrip = _mixerPanel.ChannelStrips.Find(strip => strip.ChannelId == "WaverBeacon");
+            var channelIndex = _mixerPanel.ChannelStrips.FindIndex(s => s == waverBeaconStrip);
+            WriteMuteValue(channelIndex, enable);
+            waverBeaconStrip.MuteAndDisable(enable);
         }
 
         public void EnableSubjectAudioStream(bool enable)

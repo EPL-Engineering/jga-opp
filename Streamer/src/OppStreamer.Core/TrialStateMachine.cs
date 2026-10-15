@@ -12,7 +12,7 @@ namespace OppStreamer.Core
     public sealed class TrialStateMachine
     {
         private readonly StimulusStore _store;
-        private readonly Action? _onTrialStart;
+        private readonly Action<bool>? _onTrialStart;
 
         private int _numReps = 1;
         private int _remainingReps;
@@ -30,7 +30,7 @@ namespace OppStreamer.Core
         /// here rather than duplicating trial-start detection elsewhere. Optional — null is a normal,
         /// supported "no Beacon wiring" configuration, not an error.
         /// </param>
-        public TrialStateMachine(StimulusStore store, Action? onTrialStart = null)
+        public TrialStateMachine(StimulusStore store, Action<bool>? onTrialStart = null)
         {
             _store = store ?? throw new ArgumentNullException(nameof(store));
             _onTrialStart = onTrialStart;
@@ -99,7 +99,7 @@ namespace OppStreamer.Core
                 // branch above, which never calls this). Regardless of containsProbe, per the
                 // Beacon/Alert spec: the PI wants to know when a trial started, whether or not it
                 // turns out to contain a probe.
-                _onTrialStart?.Invoke();
+                _onTrialStart?.Invoke(_pendingContainsProbe);
             }
         }
     }

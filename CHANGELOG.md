@@ -1,5 +1,12 @@
 ## Changelog
 
+### v1.5 (2026-10-15)
+#### Changed
+- play beacon only when probe is present
+- play beacon to waver only in training mode
+
+---
+
 ### v1.4.1 (2026-09-17)
 #### Fixed
 - bug initializing manual values in swept masker mode
